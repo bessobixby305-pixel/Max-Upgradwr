@@ -39,12 +39,10 @@ export default function Chats({ go }: { go: (r: Route) => void }) {
                   {preview}
                 </div>
               </div>
-              <div className="r">
-                {last ? timeOf(last.ts) : ''}
+              <div className="r" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
+                <span>{last ? timeOf(last.ts) : ''}</span>
                 {botMsgs.length > 0 && (
-                  <div className="badge" style={{ position: 'static', marginTop: 4, marginLeft: 'auto' }}>
-                    {botMsgs.length > 99 ? '99+' : botMsgs.length}
-                  </div>
+                  <span className="badge-pill">{botMsgs.length > 99 ? '99+' : botMsgs.length}</span>
                 )}
               </div>
             </button>
