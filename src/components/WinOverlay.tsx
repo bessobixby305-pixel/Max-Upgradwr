@@ -22,12 +22,11 @@ export default function WinOverlay({ win, onClose }: { win: WinInfo | null; onCl
 
   const item = win.itemId ? ITEM_BY_ID[win.itemId] : undefined
   const rar = item ? rarityOf(item.price) : 'epic'
-  const color = item ? RARITY_COLOR[rar] : 'var(--accent-1)'
+  const color = item ? RARITY_COLOR[rar] : 'var(--accent)'
 
   return (
     <div className="win-back" onClick={onClose}>
       <div className="win-card" style={{ ['--rc' as any]: color }} onClick={(e) => e.stopPropagation()}>
-        <div className="win-rays" />
         <div className="win-emo">{item ? item.emo : '💠'}</div>
         <div className="win-label">{win.label}</div>
         {item ? (

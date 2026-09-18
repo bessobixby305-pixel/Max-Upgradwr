@@ -10,7 +10,7 @@ const EMOS = ['🐱', '🐼', '🦊', '🐸', '👾', '🎧', '🐝', '🍕']
 
 interface Entry { name: string; emo: string; bet: number; me: boolean; color: string }
 
-const COLORS = ['#7C5CFF', '#3F8CFF', '#1FB85A', '#FFB020', '#FF4FA3', '#00C2C7']
+const COLORS = ['#4B49E5', '#3B7FC4', '#1E9E52', '#C98411', '#C7467E', '#12938D']
 
 export default function Jackpot({ onBack }: { onBack: () => void }) {
   const g = useGame()
@@ -121,9 +121,8 @@ export default function Jackpot({ onBack }: { onBack: () => void }) {
         <div className="pad">
           <div className="wheel-wrap">
             <div className="wheel-box">
-              <svg className="wheel-arrow" viewBox="0 0 34 40" aria-hidden>
-                <path d="M17 40 L2 11 A16.5 16.5 0 0 1 32 11 Z" fill="#fff" stroke="rgba(10,12,20,.25)" strokeWidth="1.2" />
-                <circle cx="17" cy="12" r="4.6" fill="var(--accent-1)" />
+              <svg className="wheel-arrow" viewBox="0 0 20 24" aria-hidden>
+                <path d="M10 24 1.5 6.5a9.5 9.5 0 0 1 17 0Z" fill="var(--text)" />
               </svg>
               <svg
                 className="wheel-svg"

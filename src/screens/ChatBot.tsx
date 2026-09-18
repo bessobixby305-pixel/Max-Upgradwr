@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Route } from '../App'
 import { BalancePill, Header } from '../components/ui'
 import ResultCard from '../components/ResultCard'
+import Icon from '../components/Icon'
 import { useGame } from '../store/game'
 
 const time = (ts: number) =>
@@ -37,7 +38,7 @@ export default function ChatBot({ onBack, go }: { onBack: () => void; go: (r: Ro
         right={
           <>
             <BalancePill />
-            <button className="icon-btn" onClick={clearChat} title="Очистить" aria-label="Очистить">🗑</button>
+            <button className="icon-btn" onClick={clearChat} title="Очистить" aria-label="Очистить"><Icon name="trash" size={20} /></button>
           </>
         }
       />

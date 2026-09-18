@@ -2,6 +2,7 @@ import { Route } from '../App'
 import { BalancePill, Header } from '../components/ui'
 import { fmt } from '../core/economy'
 import { ITEM_BY_ID } from '../core/items'
+import Icon from '../components/Icon'
 import { useGame } from '../store/game'
 
 const timeOf = (ts: number) =>
@@ -32,9 +33,12 @@ export default function Chats({ go }: { go: (r: Route) => void }) {
         <div className="pad">
           <div className="list">
             <button className="row" onClick={() => go({ s: 'chatBot' })}>
-              <div className="avatar">🎰</div>
+              <div className="avatar acc"><Icon name="games" size={21} /></div>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div className="t">MAX Upgrader Bot ☑️</div>
+                <div className="t" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  MAX Upgrader Bot
+                  <span className="verified" title="Проверенный"><Icon name="check" size={9} stroke={3.4} /></span>
+                </div>
                 <div className="s" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {preview}
                 </div>
@@ -48,7 +52,7 @@ export default function Chats({ go }: { go: (r: Route) => void }) {
             </button>
 
             <button className="row" onClick={() => go({ s: 'drops' })}>
-              <div className="avatar" style={{ background: 'linear-gradient(135deg,#FFB020,#FF6A00)' }}>📣</div>
+              <div className="avatar"><Icon name="megaphone" size={20} /></div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div className="t">Дропы MAX</div>
                 <div className="s" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -59,26 +63,26 @@ export default function Chats({ go }: { go: (r: Route) => void }) {
             </button>
 
             <button className="row" onClick={() => go({ s: 'fair' })}>
-              <div className="avatar" style={{ background: 'linear-gradient(135deg,#2FBF61,#149648)' }}>🛡️</div>
+              <div className="avatar"><Icon name="shield" size={20} /></div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div className="t">Честная игра</div>
                 <div className="s">Проверка результатов и сидов</div>
               </div>
-              <div className="r">›</div>
+              <div className="r"><Icon name="chevron" size={16} /></div>
             </button>
           </div>
 
           <div className="sec-title">Закреплённое</div>
           <div className="list">
             <button className="row" onClick={() => go({ s: 'upgrade' })}>
-              <div className="avatar sm">🎰</div>
+              <div className="avatar sm"><Icon name="games" size={17} /></div>
               <div className="t">Открыть апгрейдер</div>
-              <div className="r">›</div>
+              <div className="r"><Icon name="chevron" size={16} /></div>
             </button>
             <button className="row" onClick={() => go({ s: 'wheel' })}>
-              <div className="avatar sm" style={{ background: 'linear-gradient(135deg,#FF4FA3,#C41E6B)' }}>🎡</div>
+              <div className="avatar sm"><Icon name="wheel" size={17} /></div>
               <div className="t">Колесо дня</div>
-              <div className="r">›</div>
+              <div className="r"><Icon name="chevron" size={16} /></div>
             </button>
           </div>
         </div>

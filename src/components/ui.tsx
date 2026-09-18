@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { ITEM_BY_ID, RARITY_COLOR, rarityOf } from '../core/items'
 import { fmt } from '../core/economy'
 import { useGame } from '../store/game'
+import Icon from './Icon'
 
 export function Header({
   title, sub, onBack, right,
@@ -10,9 +11,13 @@ export function Header({
 }) {
   return (
     <div className="hdr">
-      {onBack && <button className="back-btn" onClick={onBack} aria-label="Назад">‹</button>}
+      {onBack && (
+        <button className="back-btn" onClick={onBack} aria-label="Назад">
+          <Icon name="back" size={22} />
+        </button>
+      )}
       <div style={{ minWidth: 0 }}>
-        <h1 style={{ fontSize: onBack ? 19 : 26 }}>{title}</h1>
+        <h1 style={{ fontSize: onBack ? 18 : 23 }}>{title}</h1>
         {sub && <div className="sub">{sub}</div>}
       </div>
       <div className="hdr-right">{right}</div>
@@ -37,7 +42,8 @@ export function BalancePill() {
 
   return (
     <span className={'balance-pill mono' + (bump ? ' bump' : '')}>
-      💠 {fmt(shown)}
+      <Icon name="coin" size={15} stroke={1.9} />
+      {fmt(shown)}
     </span>
   )
 }
@@ -74,7 +80,7 @@ export function ItemCard({
       className={'item ' + rar}
       style={{
         ['--rc' as any]: RARITY_COLOR[rar],
-        outline: selected ? '2px solid var(--accent-1)' : undefined,
+        outline: selected ? '2px solid var(--accent)' : undefined,
         outlineOffset: 2,
       }}
       onClick={onClick}

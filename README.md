@@ -11,7 +11,7 @@
 
 ## Скачать
 
-- **Android:** [MAX-Upgrader-1.2.0.apk](releases/MAX-Upgrader-1.2.0.apk?raw=1) — подписан релизным ключом, ставится поверх предыдущей версии.
+- **Android:** [MAX-Upgrader-1.3.0.apk](releases/MAX-Upgrader-1.3.0.apk?raw=1) — подписан релизным ключом, ставится поверх предыдущей версии.
 - **Windows:** установщик и portable — во вкладке [Releases](../../releases).
 
 APK из GitHub Actions подписан отладочным ключом (имя оканчивается на `-debug`)

@@ -92,7 +92,7 @@ export default function Contract({ onBack }: { onBack: () => void }) {
                     <div className="muted" style={{ fontSize: 11.5 }}>сумма</div>
                   </div>
                   <div>
-                    <div className="mono" style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent-1)' }}>{fmt(ev)}</div>
+                    <div className="mono" style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)' }}>{fmt(ev)}</div>
                     <div className="muted" style={{ fontSize: 11.5 }}>ожидание</div>
                   </div>
                 </div>

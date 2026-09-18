@@ -14,9 +14,9 @@ const SLOTS: Color[] = [
 const MULT: Record<Color, number> = { red: 2, black: 2, green: 14 }
 const LABEL: Record<Color, string> = { red: 'Красное', black: 'Чёрное', green: 'Зелёное' }
 const TINT: Record<Color, string> = {
-  red: 'linear-gradient(180deg,#FF6259,#CE2B21)',
-  black: 'linear-gradient(180deg,#3A3F4B,#171A21)',
-  green: 'linear-gradient(180deg,#34D66F,#0E9B47)',
+  red: '#D94437',
+  black: '#2E323B',
+  green: '#1E9E52',
 }
 
 const CELL = 62
@@ -157,7 +157,7 @@ export default function Double({ onBack }: { onBack: () => void }) {
                 className="dbl-pick"
                 style={{
                   background: TINT[c],
-                  outline: pick === c ? '3px solid var(--accent-1)' : 'none',
+                  outline: pick === c ? '2px solid var(--text)' : 'none',
                   outlineOffset: 2,
                 }}
                 onClick={() => { setPick(c); sfx.click() }}

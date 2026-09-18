@@ -5,20 +5,20 @@ import { CASES } from '../core/cases'
 import { useGame } from '../store/game'
 import { sfx } from '../lib/fx'
 
-interface G { r: Route['s']; t: string; s: string; ico: string; grad: string }
+interface G { r: Route['s']; t: string; s: string; ico: string; tint: string }
 
 const GAMES: G[] = [
-  { r: 'upgrade', t: 'Апгрейд', s: 'x1.05 — x50', ico: '🎰', grad: 'linear-gradient(135deg,#7C5CFF,#3F8CFF)' },
-  { r: 'cases', t: 'Кейсы', s: `${CASES.length} кейсов`, ico: '📦', grad: 'linear-gradient(135deg,#FF4FA3,#C41E6B)' },
-  { r: 'mines', t: 'Мины', s: 'поле 5×5', ico: '💣', grad: 'linear-gradient(135deg,#2FBF61,#0E7A3C)' },
-  { r: 'crash', t: 'Краш', s: 'успей забрать', ico: '🚀', grad: 'linear-gradient(135deg,#FFB020,#FF6A00)' },
-  { r: 'contract', t: 'Контракт', s: '3–10 предметов', ico: '📝', grad: 'linear-gradient(135deg,#A25CFF,#6A2FD6)' },
-  { r: 'battle', t: 'Битва кейсов', s: 'против ботов', ico: '⚔️', grad: 'linear-gradient(135deg,#3F8CFF,#1E4FB8)' },
-  { r: 'double', t: 'Дабл', s: 'x2 и x14', ico: '🔴', grad: 'linear-gradient(135deg,#FF6259,#8E1810)' },
-  { r: 'dice', t: 'Кости', s: 'больше / меньше', ico: '🎲', grad: 'linear-gradient(135deg,#00C2C7,#046B7A)' },
-  { r: 'tower', t: 'Башня', s: '8 этажей вверх', ico: '🗼', grad: 'linear-gradient(135deg,#8E6BFF,#3B1E8F)' },
-  { r: 'slots', t: 'Слоты', s: 'три семёрки', ico: '🎰', grad: 'linear-gradient(135deg,#FFD76A,#E07A00)' },
-  { r: 'jackpot', t: 'Джекпот', s: 'банк забирает один', ico: '🏦', grad: 'linear-gradient(135deg,#2FD07B,#0A6B4A)' },
+  { r: 'upgrade', t: 'Апгрейд', s: 'x1.05 — x50', ico: '🎰', tint: '#4B49E5' },
+  { r: 'cases', t: 'Кейсы', s: `${CASES.length} кейсов`, ico: '📦', tint: '#C7467E' },
+  { r: 'mines', t: 'Мины', s: 'поле 5×5', ico: '💣', tint: '#1E9E52' },
+  { r: 'crash', t: 'Краш', s: 'успей забрать', ico: '🚀', tint: '#C98411' },
+  { r: 'contract', t: 'Контракт', s: '3–10 предметов', ico: '📝', tint: '#8557CE' },
+  { r: 'battle', t: 'Битва кейсов', s: 'против ботов', ico: '⚔️', tint: '#3B7FC4' },
+  { r: 'double', t: 'Дабл', s: 'x2 и x14', ico: '🔴', tint: '#D94437' },
+  { r: 'dice', t: 'Кости', s: 'больше / меньше', ico: '🎲', tint: '#12938D' },
+  { r: 'tower', t: 'Башня', s: '8 этажей вверх', ico: '🗼', tint: '#6A56D6' },
+  { r: 'slots', t: 'Слоты', s: 'три семёрки', ico: '🎰', tint: '#C98411' },
+  { r: 'jackpot', t: 'Джекпот', s: 'банк забирает один', ico: '🏦', tint: '#1E9E52' },
 ]
 
 export default function Games({ go }: { go: (r: Route) => void }) {
@@ -53,19 +53,19 @@ export default function Games({ go }: { go: (r: Route) => void }) {
               className={'btn' + (dailyReady ? '' : ' ghost')}
               disabled={!dailyReady}
               onClick={claim}
-              style={{ flexDirection: 'column', gap: 2, padding: '13px 10px' }}
+              style={{ flexDirection: 'column', gap: 1, padding: '11px 10px' }}
             >
-              <span style={{ fontSize: 14 }}>🎁 Ежедневный</span>
+              <span style={{ fontSize: 14 }}>Ежедневный бонус</span>
               <span style={{ fontSize: 11.5, opacity: .85, fontWeight: 600 }}>
                 {dailyReady ? `+${fmt(dailyReward(nextStreak))} · день ${nextStreak}` : 'завтра'}
               </span>
             </button>
             <button
-              className={'btn' + (wheelReady ? '' : ' ghost')}
+              className="btn outline"
               onClick={() => go({ s: 'wheel' })}
-              style={{ flexDirection: 'column', gap: 2, padding: '13px 10px' }}
+              style={{ flexDirection: 'column', gap: 1, padding: '11px 10px' }}
             >
-              <span style={{ fontSize: 14 }}>🎡 Колесо дня</span>
+              <span style={{ fontSize: 14 }}>Колесо дня</span>
               <span style={{ fontSize: 11.5, opacity: .85, fontWeight: 600 }}>
                 {wheelReady ? 'бесплатно' : 'через 8 ч'}
               </span>
@@ -77,10 +77,12 @@ export default function Games({ go }: { go: (r: Route) => void }) {
               <button
                 key={x.r}
                 className="gcard"
-                style={{ background: x.grad }}
                 onClick={() => { sfx.click(); go({ s: x.r } as Route) }}
               >
-                <span className="gico">{x.ico}</span>
+                <span
+                  className="gico"
+                  style={{ ['--tint' as any]: `color-mix(in srgb, ${x.tint} 14%, transparent)` }}
+                >{x.ico}</span>
                 <span className="gt">{x.t}</span>
                 <span className="gs">{x.s}</span>
               </button>
@@ -89,7 +91,6 @@ export default function Games({ go }: { go: (r: Route) => void }) {
 
           {g.balance <= 50 && (
             <div className="card" style={{ marginTop: 14, textAlign: 'center' }}>
-              <div style={{ fontSize: 30 }}>🛟</div>
               <b>Закончились MX?</b>
               <p className="muted" style={{ fontSize: 13 }}>
                 Забери спасательный круг — 100 MX раз в 15 минут.

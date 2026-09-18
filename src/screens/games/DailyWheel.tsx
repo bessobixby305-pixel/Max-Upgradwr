@@ -4,7 +4,7 @@ import { WHEEL_COOLDOWN, WHEEL_SECTORS, fmt } from '../../core/economy'
 import { useGame } from '../../store/game'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
-const COLORS = ['#7C5CFF', '#3F8CFF', '#2FBF61', '#FFB020', '#FF4FA3', '#A25CFF', '#00B8C4', '#FF6A00', '#E5484D']
+const COLORS = ['#4B49E5', '#3B7FC4', '#1E9E52', '#C98411', '#C7467E', '#8557CE', '#12938D', '#B8621C', '#D94437']
 const TOTAL = WHEEL_SECTORS.reduce((s, x) => s + x.weight, 0)
 
 export default function DailyWheel({ onBack }: { onBack: () => void }) {
@@ -67,7 +67,9 @@ export default function DailyWheel({ onBack }: { onBack: () => void }) {
         <div className="pad">
           <div className="wheel-wrap">
             <div className="wheel-box">
-              <div className="wheel-arrow" />
+              <svg className="wheel-arrow" viewBox="0 0 20 24" aria-hidden>
+                <path d="M10 24 1.5 6.5a9.5 9.5 0 0 1 17 0Z" fill="var(--text)" />
+              </svg>
               <svg
                 className="wheel-svg"
                 viewBox="0 0 100 100"

@@ -126,15 +126,15 @@ export default function Crash({ onBack }: { onBack: () => void }) {
             <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
               <defs>
                 <linearGradient id="crashFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={state === 'crashed' ? 'var(--red)' : 'var(--accent-1)'} stopOpacity="0.45" />
-                  <stop offset="100%" stopColor={state === 'crashed' ? 'var(--red)' : 'var(--accent-1)'} stopOpacity="0" />
+                  <stop offset="0%" stopColor={state === 'crashed' ? 'var(--red)' : 'var(--accent)'} stopOpacity="0.45" />
+                  <stop offset="100%" stopColor={state === 'crashed' ? 'var(--red)' : 'var(--accent)'} stopOpacity="0" />
                 </linearGradient>
               </defs>
               {points && <polygon points={`0,100 ${points} 100,100`} fill="url(#crashFill)" />}
               <polyline
                 points={points}
                 fill="none"
-                stroke={state === 'crashed' ? 'var(--red)' : 'var(--accent-1)'}
+                stroke={state === 'crashed' ? 'var(--red)' : 'var(--accent)'}
                 strokeWidth="2.2"
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"

@@ -1,6 +1,6 @@
 {
   "name": "max-upgrader",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "MAX Upgrader — игра-апгрейдер в стиле мессенджера MAX",
   "main": "electron/main.cjs",

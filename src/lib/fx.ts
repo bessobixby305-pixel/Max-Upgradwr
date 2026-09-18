@@ -54,7 +54,7 @@ export function haptic(pattern: number | number[] = 12) {
   try { navigator.vibrate?.(pattern) } catch { /* не поддерживается */ }
 }
 
-const CONFETTI_COLORS = ['#7C5CFF', '#3F8CFF', '#FFB020', '#FF4FA3', '#2FBF61']
+const CONFETTI_COLORS = ['#4B49E5', '#3B7FC4', '#C98411', '#C7467E', '#1E9E52']
 
 export function confetti(host: HTMLElement | null, count = 70) {
   if (!host) return

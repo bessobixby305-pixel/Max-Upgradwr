@@ -3,6 +3,7 @@ import { Route } from '../App'
 import { BalancePill, Header, Sheet } from '../components/ui'
 import { ACHIEVEMENTS, PROMOS, fmt, levelFromXp, titleFor } from '../core/economy'
 import { useGame } from '../store/game'
+import Icon, { IconName } from '../components/Icon'
 import { sfx } from '../lib/fx'
 
 export default function Profile({ go }: { go: (r: Route) => void }) {
@@ -22,7 +23,9 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
       <div className="screen">
         <div className="pad">
           <div className="card center" style={{ marginBottom: 14 }}>
-            <div className="avatar lg" style={{ margin: '0 auto 10px' }}>🦄</div>
+            <div className="avatar lg" style={{ margin: '0 auto 10px' }}>
+              <Icon name="user" size={38} stroke={1.4} />
+            </div>
             <div style={{ fontSize: 20, fontWeight: 800 }}>Игрок MAX</div>
             <div className="muted" style={{ fontSize: 13 }}>{titleFor(lvl.lvl)} · уровень {lvl.lvl}</div>
             <div className="progress" style={{ marginTop: 12 }}>
@@ -52,17 +55,17 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
           <div className="sec-title">Игра</div>
           <div className="list">
             <button className="row" onClick={() => go({ s: 'ach' })}>
-              <span style={{ fontSize: 20 }}>🏆</span>
+              <Icon name="trophy" size={20} className="row-ico" />
               <span className="t">Достижения</span>
               <span className="r">{g.achievements.length} / {ACHIEVEMENTS.length}</span>
             </button>
             <button className="row" onClick={() => go({ s: 'fair' })}>
-              <span style={{ fontSize: 20 }}>🛡️</span>
+              <Icon name="shield" size={20} className="row-ico" />
               <span className="t">Честная игра</span>
               <span className="r">раундов: {g.fair.nonce}</span>
             </button>
             <button className="row" onClick={() => { setPromoOpen(true); sfx.click() }}>
-              <span style={{ fontSize: 20 }}>🎟️</span>
+              <Icon name="ticket" size={20} className="row-ico" />
               <span className="t">Промокод</span>
               <span className="r">{g.promos.length} / {Object.keys(PROMOS).length}</span>
             </button>
@@ -71,7 +74,7 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
           <div className="sec-title">Настройки</div>
           <div className="list">
             <div className="row">
-              <span style={{ fontSize: 20 }}>🎨</span>
+              <Icon name="theme" size={20} className="row-ico" />
               <span className="t">Тема</span>
               <span className="r">
                 <span className="chips">
@@ -86,18 +89,18 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
                 </span>
               </span>
             </div>
-            <Toggle label="Звук" emo="🔊" on={g.settings.sound} set={(v) => g.setSettings({ sound: v })} />
-            <Toggle label="Вибрация" emo="📳" on={g.settings.haptics} set={(v) => g.setSettings({ haptics: v })} />
-            <Toggle label="Быстрый режим" emo="⚡" on={g.settings.fastMode} set={(v) => g.setSettings({ fastMode: v })} />
-            <Toggle label="Лента дропов" emo="📣" on={g.settings.showDrops} set={(v) => g.setSettings({ showDrops: v })} />
+            <Toggle label="Звук" ico="sound" on={g.settings.sound} set={(v) => g.setSettings({ sound: v })} />
+            <Toggle label="Вибрация" ico="vibrate" on={g.settings.haptics} set={(v) => g.setSettings({ haptics: v })} />
+            <Toggle label="Быстрый режим" ico="bolt" on={g.settings.fastMode} set={(v) => g.setSettings({ fastMode: v })} />
+            <Toggle label="Лента дропов" ico="megaphone" on={g.settings.showDrops} set={(v) => g.setSettings({ showDrops: v })} />
           </div>
 
           <div className="sec-title">Данные</div>
           <div className="list">
             <button className="row" onClick={() => { setSaveText(g.exportSave()); setSaveOpen(true) }}>
-              <span style={{ fontSize: 20 }}>💾</span>
+              <Icon name="save" size={20} className="row-ico" />
               <span className="t">Экспорт / импорт прогресса</span>
-              <span className="r">›</span>
+              <span className="r"><Icon name="chevron" size={16} /></span>
             </button>
             <button
               className="row"
@@ -107,13 +110,13 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
                 }
               }}
             >
-              <span style={{ fontSize: 20 }}>🗑</span>
+              <Icon name="reset" size={20} className="row-ico" style={{ color: 'var(--red)' }} />
               <span className="t" style={{ color: 'var(--red)' }}>Сбросить прогресс</span>
             </button>
           </div>
 
           <p className="muted center" style={{ fontSize: 11.5, padding: '22px 10px 0', lineHeight: 1.6 }}>
-            MAX Upgrader v1.2 · игра на виртуальную валюту MX.<br />
+            MAX Upgrader v1.3 · игра на виртуальную валюту MX.<br />
             Реальных денег, покупок и вывода средств нет.
           </p>
         </div>
@@ -169,10 +172,10 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
   )
 }
 
-function Toggle({ label, emo, on, set }: { label: string; emo: string; on: boolean; set: (v: boolean) => void }) {
+function Toggle({ label, ico, on, set }: { label: string; ico: IconName; on: boolean; set: (v: boolean) => void }) {
   return (
     <button className="row" onClick={() => set(!on)}>
-      <span style={{ fontSize: 20 }}>{emo}</span>
+      <Icon name={ico} size={20} className="row-ico" />
       <span className="t">{label}</span>
       <span className="r">
         <span className={'sw' + (on ? ' on' : '')}><i /></span>

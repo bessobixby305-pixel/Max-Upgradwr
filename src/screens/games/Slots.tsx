@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { BalancePill, BetInput, Header, Sheet } from '../../components/ui'
 import { PAY2, SLOT_SYMS, SlotSym, pickSym, slotPayout, slotsRtp } from '../../core/slots'
 import { fmt } from '../../core/economy'
+import Icon from '../../components/Icon'
 import { useGame } from '../../store/game'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
@@ -99,7 +100,7 @@ export default function Slots({ onBack }: { onBack: () => void }) {
         title="Слоты"
         sub={`RTP ${(slotsRtp() * 100).toFixed(0)}%`}
         onBack={onBack}
-        right={<><button className="icon-btn" onClick={() => setPayOpen(true)} aria-label="Выплаты">ⓘ</button><BalancePill /></>}
+        right={<><button className="icon-btn" onClick={() => setPayOpen(true)} aria-label="Выплаты"><Icon name="info" size={21} /></button><BalancePill /></>}
       />
       <div className="screen has-action-bar">
         <div className="pad">

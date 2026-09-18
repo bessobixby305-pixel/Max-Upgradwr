@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core'
 import { App as CapApp } from '@capacitor/app'
 import { useGame } from './store/game'
 import { Toasts } from './components/ui'
+import Icon, { IconName } from './components/Icon'
 import { startDropsFeed } from './lib/drops'
 import Chats from './screens/Chats'
 import ChatBot from './screens/ChatBot'
@@ -32,11 +33,11 @@ export type Route =
   | { s: 'contract' } | { s: 'battle' } | { s: 'wheel' }
   | { s: 'double' } | { s: 'dice' } | { s: 'tower' } | { s: 'slots' } | { s: 'jackpot' }
 
-const TABS: { id: Tab; ico: string; label: string }[] = [
-  { id: 'chats', ico: '💬', label: 'Чаты' },
-  { id: 'games', ico: '🎮', label: 'Игры' },
-  { id: 'inv', ico: '🎒', label: 'Инвентарь' },
-  { id: 'profile', ico: '👤', label: 'Профиль' },
+const TABS: { id: Tab; ico: IconName; label: string }[] = [
+  { id: 'chats', ico: 'chat', label: 'Чаты' },
+  { id: 'games', ico: 'games', label: 'Игры' },
+  { id: 'inv', ico: 'bag', label: 'Инвентарь' },
+  { id: 'profile', ico: 'user', label: 'Профиль' },
 ]
 
 export default function App() {
@@ -120,7 +121,7 @@ export default function App() {
               className={'tab' + (tab === t.id ? ' on' : '')}
               onClick={() => setTab(t.id)}
             >
-              <span className="ico">{t.ico}</span>
+              <Icon name={t.ico} size={23} stroke={tab === t.id ? 2 : 1.6} />
               <span>{t.label}</span>
               {t.id === 'chats' && unread > 0 && (
                 <span className="badge">{unread > 99 ? '99+' : unread}</span>
