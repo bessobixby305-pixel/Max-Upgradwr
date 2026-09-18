@@ -5,6 +5,7 @@ import { CASES, CaseDef, caseRtp, dropChance, pickDrop } from '../../core/cases'
 import { ITEM_BY_ID, ItemDef, RARITY_COLOR, rarityOf } from '../../core/items'
 import { fmt } from '../../core/economy'
 import Icon from '../../components/Icon'
+import { tintVars } from '../Games'
 import { useGame } from '../../store/game'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
@@ -132,11 +133,13 @@ export default function Cases({ onBack }: { onBack: () => void }) {
           {!active ? (
             <div className="grid2">
               {CASES.map((c) => (
-                <button key={c.id} className="gcard" onClick={() => { setActive(c); sfx.click() }}>
-                  <span
-                    className="gico"
-                    style={{ ['--tint' as any]: `color-mix(in srgb, ${c.tint} 14%, transparent)` }}
-                  >{c.emo}</span>
+                <button
+                  key={c.id}
+                  className="gcard"
+                  style={tintVars(c.tint)}
+                  onClick={() => { setActive(c); sfx.click() }}
+                >
+                  <span className="gico">{c.emo}</span>
                   <span className="gt">{c.name}</span>
                   <span className="gs mono">{fmt(c.price)} MX</span>
                 </button>

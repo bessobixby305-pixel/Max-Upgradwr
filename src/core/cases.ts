@@ -14,7 +14,7 @@ export interface CaseDef {
 export const CASES: CaseDef[] = [
   {
     id: 'starter', name: 'Стартовый', emo: '📦', price: 60,
-    tint: '#8A93A0',
+    tint: '#9AA3B2',
     drops: [
       { id: 'sticker_cat', weight: 320 },
       { id: 'sticker_meme', weight: 250 },
@@ -30,7 +30,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'emoji', name: 'Эмодзи', emo: '😎', price: 130,
-    tint: '#C98411',
+    tint: '#FFC53D',
     drops: [
       { id: 'sticker_bear', weight: 300 },
       { id: 'emoji_pack', weight: 245 },
@@ -46,7 +46,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'stickers', name: 'Стикерпак', emo: '🎨', price: 300,
-    tint: '#3B7FC4',
+    tint: '#3B82F6',
     drops: [
       { id: 'reaction_rare', weight: 290 },
       { id: 'wallpaper', weight: 235 },
@@ -63,7 +63,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'gifts', name: 'Подарочный', emo: '🎁', price: 690,
-    tint: '#C7467E',
+    tint: '#F0468C',
     drops: [
       { id: 'gift_candy', weight: 280 },
       { id: 'gift_coffee', weight: 230 },
@@ -80,7 +80,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'night', name: 'Ночной', emo: '🌑', price: 1410,
-    tint: '#4B5163',
+    tint: '#6B7280',
     drops: [
       { id: 'wallpaper_anim', weight: 275 },
       { id: 'theme_dark', weight: 220 },
@@ -98,7 +98,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'premium', name: 'Премиум', emo: '💎', price: 4500,
-    tint: '#8557CE',
+    tint: '#A855F7',
     drops: [
       { id: 'gift_trophy', weight: 270 },
       { id: 'folder_pro', weight: 215 },
@@ -116,7 +116,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'channel', name: 'Канал', emo: '📣', price: 9900,
-    tint: '#C7467E',
+    tint: '#F0468C',
     drops: [
       { id: 'avatar_anim', weight: 265 },
       { id: 'premium_1m', weight: 210 },
@@ -135,7 +135,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'admin', name: 'Админский', emo: '🛡️', price: 21400,
-    tint: '#1E9E52',
+    tint: '#3DD68C',
     drops: [
       { id: 'gift_car', weight: 260 },
       { id: 'chat_ghost', weight: 205 },
@@ -154,7 +154,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'space', name: 'Космос', emo: '🚀', price: 56600,
-    tint: '#4B49E5',
+    tint: '#7C5CFF',
     drops: [
       { id: 'nick_gold', weight: 255 },
       { id: 'gift_yacht', weight: 200 },
@@ -173,7 +173,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'legend', name: 'Легендарный', emo: '👑', price: 145000,
-    tint: '#C98411',
+    tint: '#FFC53D',
     drops: [
       { id: 'gift_jet', weight: 250 },
       { id: 'badge_mod', weight: 196 },
@@ -192,7 +192,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'mythic', name: 'Мифический', emo: '🌌', price: 510000,
-    tint: '#C7467E',
+    tint: '#F0468C',
     drops: [
       { id: 'gift_crown', weight: 245 },
       { id: 'badge_owner', weight: 190 },
@@ -210,7 +210,7 @@ export const CASES: CaseDef[] = [
   },
   {
     id: 'divine', name: 'Божественный', emo: '🗝️', price: 1270000,
-    tint: '#12938D',
+    tint: '#00D3C7',
     drops: [
       { id: 'gift_blackhole', weight: 240 },
       { id: 'nick_any', weight: 188 },

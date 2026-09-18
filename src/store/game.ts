@@ -159,7 +159,7 @@ export const useGame = create<GameState>()(
       inventory: [],
       fair: newFairState(),
       stats: { ...EMPTY_STATS },
-      settings: { theme: 'auto', sound: true, haptics: true, fastMode: false, showDrops: true },
+      settings: { theme: 'dark', sound: true, haptics: true, fastMode: false, showDrops: true },
       messages: [],
       rounds: [],
       achievements: [],
