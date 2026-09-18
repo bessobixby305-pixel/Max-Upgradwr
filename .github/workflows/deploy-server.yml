@@ -77,13 +77,13 @@ jobs:
             exit 1
           fi
           if [ -n "${API_DOMAIN}" ]; then
-            sudo docker compose up -d --build
+            sudo docker compose --profile https up -d --build
           else
-            # без домена Caddy поднимать нечему — работает только внутренний API
+            # без домена Caddy не нужен — профиль https просто не включаем
             echo "API_DOMAIN не задан — HTTPS-фронт пропущен"
-            sudo docker compose up -d --build db server
+            sudo docker compose up -d --build
           fi
-          sudo docker compose ps
+          sudo docker compose --profile https ps
           REMOTE
 
       - name: Smoke check

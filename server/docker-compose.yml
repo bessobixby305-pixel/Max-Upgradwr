@@ -33,10 +33,12 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    # поднимается только с профилем https, то есть когда домен задан
+    profiles: [https]
     depends_on:
       - server
     environment:
-      API_DOMAIN: ${API_DOMAIN:?нужен API_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN:-localhost}
     ports:
       - "80:80"
       - "443:443"
