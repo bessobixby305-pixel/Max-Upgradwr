@@ -44,6 +44,10 @@ jobs:
         run: npm ci
 
       - name: Build web bundle
+        env:
+          # адрес сервера зашивается в сборку; без секрета приложение
+          # остаётся полностью офлайновым, как раньше
+          VITE_API_URL: ${{ secrets.API_DOMAIN && format('https://{0}', secrets.API_DOMAIN) || '' }}
         run: npm run build
 
       - name: Sync Capacitor
@@ -104,6 +108,10 @@ jobs:
         run: npm ci
 
       - name: Build web bundle
+        env:
+          # адрес сервера зашивается в сборку; без секрета приложение
+          # остаётся полностью офлайновым, как раньше
+          VITE_API_URL: ${{ secrets.API_DOMAIN && format('https://{0}', secrets.API_DOMAIN) || '' }}
         run: npm run build
 
       - name: Build installer and portable exe

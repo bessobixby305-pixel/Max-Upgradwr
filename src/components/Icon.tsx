@@ -5,6 +5,7 @@ export type IconName =
   | 'back' | 'info' | 'trash' | 'check' | 'coin' | 'close'
   | 'home' | 'theme' | 'sound' | 'vibrate' | 'bolt' | 'megaphone'
   | 'trophy' | 'shield' | 'ticket' | 'save' | 'reset' | 'chevron' | 'gift' | 'wheel'
+  | 'cloud' | 'logout' | 'key'
 
 const PATHS: Record<IconName, { d: string; fill?: boolean }[]> = {
   chat: [{ d: 'M21 11.5a8.4 8.4 0 0 1-9 8.4 9.3 9.3 0 0 1-2.8-.4L4 21l1.6-4.2A8.2 8.2 0 0 1 3.6 11.5 8.4 8.4 0 0 1 12 3.1a8.4 8.4 0 0 1 9 8.4Z' }],
@@ -71,6 +72,17 @@ const PATHS: Record<IconName, { d: string; fill?: boolean }[]> = {
   save: [
     { d: 'M12 3.5v11M8 11l4 3.8 4-3.8' },
     { d: 'M4 16.5v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2' },
+  ],
+  cloud: [
+    { d: 'M7 19a4.3 4.3 0 0 1-.5-8.6 5.5 5.5 0 0 1 10.6-1.6A4.2 4.2 0 0 1 17.5 19H7Z' },
+  ],
+  logout: [
+    { d: 'M14.5 8V6.3A2.3 2.3 0 0 0 12.2 4H6.3A2.3 2.3 0 0 0 4 6.3v11.4A2.3 2.3 0 0 0 6.3 20h5.9a2.3 2.3 0 0 0 2.3-2.3V16' },
+    { d: 'M10 12h10m0 0-3.2-3.2M20 12l-3.2 3.2' },
+  ],
+  key: [
+    { d: 'M15.2 3.8a5.2 5.2 0 1 0-3.5 8.9c.4 0 .8 0 1.2-.1L14 14h2v2h2v2h3v-3l-7-7c.1-.4.2-.8.2-1.2a5.2 5.2 0 0 0-1-3Z' },
+    { d: 'M13.6 6.4h.01' },
   ],
   reset: [
     { d: 'M20 12a8 8 0 1 1-2.6-5.9' },

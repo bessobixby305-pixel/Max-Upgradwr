@@ -300,6 +300,16 @@ button { font: inherit; color: inherit; border: 0; background: none; cursor: poi
 @keyframes bump { 45% { transform: scale(1.07) } }
 
 .muted { color: var(--text-2); }
+
+/* индикатор связи с сервером */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 0%, transparent);
+}
 .mono { font-variant-numeric: tabular-nums; }
 .center { text-align: center; }
 .grow { flex: 1; }

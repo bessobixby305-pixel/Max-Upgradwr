@@ -14,6 +14,7 @@ import Games from './screens/Games'
 import Inventory from './screens/Inventory'
 import Profile from './screens/Profile'
 import Admin from './screens/Admin'
+import Account from './screens/Account'
 import Fairness from './screens/Fairness'
 import Achievements from './screens/Achievements'
 import Upgrade from './screens/games/Upgrade'
@@ -35,7 +36,7 @@ export type Route =
   | { s: 'upgrade' } | { s: 'cases' } | { s: 'mines' } | { s: 'crash' }
   | { s: 'contract' } | { s: 'battle' } | { s: 'wheel' }
   | { s: 'double' } | { s: 'dice' } | { s: 'tower' } | { s: 'slots' } | { s: 'jackpot' }
-  | { s: 'profile' } | { s: 'admin' }
+  | { s: 'profile' } | { s: 'admin' } | { s: 'account' }
 
 const TABS: { id: Tab; ico: IconName; label: string }[] = [
   { id: 'home', ico: 'home', label: 'Главная' },
@@ -107,6 +108,7 @@ export default function App() {
       case 'jackpot': return <Jackpot onBack={pop} />
       case 'profile': return <Profile go={push} onBack={pop} />
       case 'admin': return <Admin onBack={pop} />
+      case 'account': return <Account onBack={pop} />
     }
   }
 

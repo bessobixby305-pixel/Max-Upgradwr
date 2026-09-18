@@ -3,11 +3,13 @@ import { Route } from '../App'
 import { BalancePill, Header, Sheet } from '../components/ui'
 import { ACHIEVEMENTS, PROMOS, fmt, levelFromXp, titleFor } from '../core/economy'
 import { useGame } from '../store/game'
+import { useAccount } from '../store/account'
 import Icon, { IconName } from '../components/Icon'
 import { sfx } from '../lib/fx'
 
 export default function Profile({ go, onBack }: { go: (r: Route) => void; onBack?: () => void }) {
   const g = useGame()
+  const acc = useAccount()
   const lvl = levelFromXp(g.xp)
   const [promoOpen, setPromoOpen] = useState(false)
   const [saveOpen, setSaveOpen] = useState(false)
@@ -50,6 +52,15 @@ export default function Profile({ go, onBack }: { go: (r: Route) => void; onBack
               </div>
               <div className="l">Профит по ставкам</div>
             </div>
+          </div>
+
+          <div className="sec-title">Аккаунт</div>
+          <div className="list">
+            <button className="row" onClick={() => go({ s: 'account' })}>
+              <Icon name="cloud" size={20} className="row-ico" />
+              <span className="t">{acc.login ? 'Облачный профиль' : 'Войти или зарегистрироваться'}</span>
+              <span className="r">{acc.login ?? 'офлайн'}</span>
+            </button>
           </div>
 
           <div className="sec-title">Игра</div>
