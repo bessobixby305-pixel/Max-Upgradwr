@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLAYER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  login        String   @unique
+  passwordHash String
+  role         Role     @default(PLAYER)
+  banned       Boolean  @default(false)
+  banReason    String?
+  createdAt    DateTime @default(now())
+  lastSeenAt   DateTime @default(now())
+
+  profile   Profile?
+  items     Item[]
+  rounds    Round[]
+  seeds     Seed[]
+  promoUses PromoUse[]
+  sessions  Session[]
+
+  @@index([lastSeenAt])
+}
+
+/// Кошелёк и прогресс. Баланс в BigInt: предметы доходят до 6.8 млн,
+/// а джекпоты и выдачи из админки легко выходят за 32 бита.
+model Profile {
+  userId  String @id
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance BigInt @default(1000)
+  xp      Int    @default(0)
+
+  spins        Int    @default(0)
+  wins         Int    @default(0)
+  losses       Int    @default(0)
+  casesOpened  Int    @default(0)
+  totalWagered BigInt @default(0)
+  totalWon     BigInt @default(0)
+  bestMult     Float  @default(0)
+  biggestWin   BigInt @default(0)
+  maxBalance   BigInt @default(1000)
+
+  /// перенос локального сохранения делается один раз
+  importedAt DateTime?
+
+  @@index([balance])
+}
+
+model Item {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId     String
+  price      Int
+  source     String
+  acquiredAt DateTime @default(now())
+
+  @@index([userId, acquiredAt])
+}
+
+/// Цепочка честности. Сид раскрывается при смене цепочки.
+model Seed {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverSeed     String
+  serverSeedHash String
+  clientSeed     String
+  nonce          Int       @default(0)
+  active         Boolean   @default(true)
+  revealedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  rounds Round[]
+
+  @@index([userId, active])
+}
+
+model Round {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seedId    String
+  seed      Seed     @relation(fields: [seedId], references: [id], onDelete: Cascade)
+  game      String
+  bet       BigInt
+  payout    BigInt
+  roll      Float
+  chance    Float?
+  mult      Float?
+  nonce     Int
+  itemId    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([game, createdAt])
+}
+
+/// Сессии: refresh-токен хранится хэшем, access живёт недолго и в базу не пишется.
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshHash String    @unique
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+
+  @@index([userId])
+}
+
+model Promo {
+  id          String     @id @default(cuid())
+  code        String     @unique
+  amount      BigInt     @default(0)
+  items       String[]   @default([])
+  maxUses     Int?
+  usedCount   Int        @default(0)
+  perUserOnce Boolean    @default(true)
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  note        String?
+  createdById String?
+  createdAt   DateTime   @default(now())
+  uses        PromoUse[]
+
+  @@index([createdAt])
+}
+
+model PromoUse {
+  id      String   @id @default(cuid())
+  promoId String
+  promo   Promo    @relation(fields: [promoId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usedAt  DateTime @default(now())
+
+  @@unique([promoId, userId])
+  @@index([userId])
+}
+
+model AdminLog {
+  id           String   @id @default(cuid())
+  adminId      String
+  action       String
+  targetUserId String?
+  payload      Json?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}

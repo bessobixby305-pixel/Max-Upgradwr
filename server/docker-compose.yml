@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: maxup
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?нужен DB_PASSWORD}
+      POSTGRES_DB: maxupgrader
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U maxup -d maxupgrader"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  server:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://maxup:${DB_PASSWORD}@db:5432/maxupgrader
+      JWT_SECRET: ${JWT_SECRET:?нужен JWT_SECRET}
+      PORT: 3000
+    ports:
+      - "127.0.0.1:3000:3000"
+
+volumes:
+  pgdata:

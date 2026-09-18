@@ -1,0 +1,68 @@
+name: Deploy server
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - 'server/**'
+      - '.github/workflows/deploy-server.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to VM
+    runs-on: ubuntu-latest
+    # без секретов шаг молча пропускается, чтобы не красить CI
+    if: ${{ github.event_name == 'workflow_dispatch' || github.ref_name != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets
+        id: gate
+        env:
+          HOST: ${{ secrets.SSH_HOST }}
+        run: |
+          if [ -z "$HOST" ]; then
+            echo "SSH_HOST не задан — деплой пропущен"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up SSH
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Upload sources
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          rsync -az --delete \
+            --exclude node_modules --exclude dist --exclude .env \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new" \
+            server/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/max-upgrader-server/"
+
+      - name: Build and restart
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" bash -s <<'REMOTE'
+          set -e
+          cd ~/max-upgrader-server
+          # секреты живут только на сервере, в репозиторий не попадают
+          if [ ! -f .env ]; then
+            echo "DB_PASSWORD=$(openssl rand -hex 24)" > .env
+            echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+          fi
+          sudo docker compose up -d --build
+          sudo docker compose ps
+          REMOTE
+
+      - name: Smoke check
+        if: steps.gate.outputs.ready == 'true'
+        run: |
+          ssh -i ~/.ssh/id_ed25519 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            'for i in $(seq 1 20); do curl -fsS http://127.0.0.1:3000/health && exit 0; sleep 3; done; exit 1'
