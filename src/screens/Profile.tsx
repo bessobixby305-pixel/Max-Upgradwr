@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Route } from '../App'
 import { BalancePill, Header, Sheet } from '../components/ui'
-import { ACHIEVEMENTS, fmt, levelFromXp, titleFor } from '../core/economy'
+import { ACHIEVEMENTS, PROMOS, fmt, levelFromXp, titleFor } from '../core/economy'
 import { useGame } from '../store/game'
 import { sfx } from '../lib/fx'
 
@@ -64,7 +64,7 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
             <button className="row" onClick={() => { setPromoOpen(true); sfx.click() }}>
               <span style={{ fontSize: 20 }}>🎟️</span>
               <span className="t">Промокод</span>
-              <span className="r">›</span>
+              <span className="r">{g.promos.length} / {Object.keys(PROMOS).length}</span>
             </button>
           </div>
 
@@ -113,7 +113,7 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
           </div>
 
           <p className="muted center" style={{ fontSize: 11.5, padding: '22px 10px 0', lineHeight: 1.6 }}>
-            MAX Upgrader v1.1 · игра на виртуальную валюту MX.<br />
+            MAX Upgrader v1.2 · игра на виртуальную валюту MX.<br />
             Реальных денег, покупок и вывода средств нет.
           </p>
         </div>
@@ -135,8 +135,9 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
             if (r.ok) { sfx.coin(); setCode(''); setPromoOpen(false) }
           }}
         >Активировать</button>
-        <p className="muted" style={{ fontSize: 12.5, marginTop: 12 }}>
-          Подсказка: попробуй <b>MAX</b>, <b>UPGRADE</b>, <b>STICKER</b>.
+        <p className="muted" style={{ fontSize: 12.5, marginTop: 12, lineHeight: 1.6 }}>
+          Всего кодов: {Object.keys(PROMOS).length}. Активировано: {g.promos.length}.<br />
+          Для старта: <b>MAX</b>, <b>UPGRADE</b>, <b>STICKER</b>, <b>LUCKY</b>, <b>CAT</b>.
         </p>
       </Sheet>
 

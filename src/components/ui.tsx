@@ -87,11 +87,16 @@ export function ItemCard({
   )
 }
 
+const MAX_TOASTS = 3
+
 export function Toasts() {
   const toasts = useGame((s) => s.toasts)
+  const shown = toasts.slice(-MAX_TOASTS)
+  const hidden = toasts.length - shown.length
   return (
     <div className="toasts">
-      {toasts.map((t) => <div className="toast" key={t.id}>{t.text}</div>)}
+      {hidden > 0 && <div className="toast">и ещё {hidden}…</div>}
+      {shown.map((t) => <div className="toast" key={t.id}>{t.text}</div>)}
     </div>
   )
 }

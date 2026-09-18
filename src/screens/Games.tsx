@@ -1,6 +1,7 @@
 import { Route } from '../App'
 import { BalancePill, Header } from '../components/ui'
 import { DAILY_COOLDOWN, WHEEL_COOLDOWN, dailyReward, fmt, levelFromXp, titleFor } from '../core/economy'
+import { CASES } from '../core/cases'
 import { useGame } from '../store/game'
 import { sfx } from '../lib/fx'
 
@@ -8,11 +9,16 @@ interface G { r: Route['s']; t: string; s: string; ico: string; grad: string }
 
 const GAMES: G[] = [
   { r: 'upgrade', t: 'Апгрейд', s: 'x1.05 — x50', ico: '🎰', grad: 'linear-gradient(135deg,#7C5CFF,#3F8CFF)' },
-  { r: 'cases', t: 'Кейсы', s: '5 кейсов', ico: '📦', grad: 'linear-gradient(135deg,#FF4FA3,#C41E6B)' },
+  { r: 'cases', t: 'Кейсы', s: `${CASES.length} кейсов`, ico: '📦', grad: 'linear-gradient(135deg,#FF4FA3,#C41E6B)' },
   { r: 'mines', t: 'Мины', s: 'поле 5×5', ico: '💣', grad: 'linear-gradient(135deg,#2FBF61,#0E7A3C)' },
   { r: 'crash', t: 'Краш', s: 'успей забрать', ico: '🚀', grad: 'linear-gradient(135deg,#FFB020,#FF6A00)' },
   { r: 'contract', t: 'Контракт', s: '3–10 предметов', ico: '📝', grad: 'linear-gradient(135deg,#A25CFF,#6A2FD6)' },
   { r: 'battle', t: 'Битва кейсов', s: 'против ботов', ico: '⚔️', grad: 'linear-gradient(135deg,#3F8CFF,#1E4FB8)' },
+  { r: 'double', t: 'Дабл', s: 'x2 и x14', ico: '🔴', grad: 'linear-gradient(135deg,#FF6259,#8E1810)' },
+  { r: 'dice', t: 'Кости', s: 'больше / меньше', ico: '🎲', grad: 'linear-gradient(135deg,#00C2C7,#046B7A)' },
+  { r: 'tower', t: 'Башня', s: '8 этажей вверх', ico: '🗼', grad: 'linear-gradient(135deg,#8E6BFF,#3B1E8F)' },
+  { r: 'slots', t: 'Слоты', s: 'три семёрки', ico: '🎰', grad: 'linear-gradient(135deg,#FFD76A,#E07A00)' },
+  { r: 'jackpot', t: 'Джекпот', s: 'банк забирает один', ico: '🏦', grad: 'linear-gradient(135deg,#2FD07B,#0A6B4A)' },
 ]
 
 export default function Games({ go }: { go: (r: Route) => void }) {

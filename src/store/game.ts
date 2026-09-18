@@ -9,7 +9,9 @@ import {
 
 export interface InvItem { uid: string; id: string; at: number }
 
-export type ResultKind = 'upgrade' | 'case' | 'mines' | 'crash' | 'contract' | 'battle' | 'bonus'
+export type ResultKind =
+  | 'upgrade' | 'case' | 'mines' | 'crash' | 'contract' | 'battle' | 'bonus'
+  | 'dice' | 'double' | 'tower' | 'slots' | 'jackpot'
 
 export interface GameResult {
   kind: ResultKind
@@ -66,12 +68,21 @@ export interface Stats {
   battlesWon: number
   totalWagered: number
   totalWon: number
+  towerCashouts: number
+  towerBestFloor: number
+  slotSpins: number
+  slotJackpots: number
+  doubleGreens: number
+  diceWins: number
+  jackpotWins: number
 }
 
 const EMPTY_STATS: Stats = {
   spins: 0, wins: 0, losses: 0, bestMult: 0, biggestWin: 0, casesOpened: 0,
   bestItemPrice: 0, maxBalance: START_BALANCE, minesCashouts: 0, crashCashouts: 0,
   bestCrash: 0, contracts: 0, battlesWon: 0, totalWagered: 0, totalWon: 0,
+  towerCashouts: 0, towerBestFloor: 0, slotSpins: 0, slotJackpots: 0,
+  doubleGreens: 0, diceWins: 0, jackpotWins: 0,
 }
 
 export interface GameState {
@@ -285,6 +296,7 @@ export const useGame = create<GameState>()(
           itemsOwned: s.inventory.length,
           level: levelFromXp(s.xp).lvl,
           streak: s.daily.streak,
+          promosUsed: s.promos.length,
         }
         const unlocked = ACHIEVEMENTS.filter(
           (a) => !s.achievements.includes(a.id) && a.check(st),
@@ -340,16 +352,37 @@ export const useGame = create<GameState>()(
         const p = PROMOS[c]
         if (!p) return { ok: false, msg: 'Неверный код' }
         set((s) => ({ promos: [...s.promos, c] }))
-        get().addBalance(p.amount)
-        get().pushResult({ kind: 'bonus', title: `Промокод ${c}`, bet: 0, payout: p.amount, extra: p.label })
-        return { ok: true, msg: `+${p.amount.toLocaleString('ru-RU')} MX` }
+
+        let payout = 0
+        const parts: string[] = []
+        if (p.amount) {
+          get().addBalance(p.amount)
+          payout += p.amount
+          parts.push(`+${p.amount.toLocaleString('ru-RU')} MX`)
+        }
+        for (const id of p.items ?? []) {
+          const def = ITEM_BY_ID[id]
+          if (!def) continue
+          get().addItem(id)
+          get().recordWin(def.price)
+          payout += def.price
+          parts.push(def.emo + ' ' + def.name)
+        }
+        get().pushResult({
+          kind: 'bonus', title: `Промокод ${c}`, bet: 0, payout,
+          extra: p.label,
+          itemId: p.items?.[p.items.length - 1],
+        })
+        get().checkAchievements()
+        return { ok: true, msg: parts.join(' · ') || p.label }
       },
 
       setSettings: (p) => set((s) => ({ settings: { ...s.settings, ...p } })),
 
       toast: (text) => {
         const id = uid()
-        set((s) => ({ toasts: [...s.toasts, { id, text }] }))
+        // когда достижения падают пачкой, короткая очередь не даёт залепить экран
+        set((s) => ({ toasts: [...s.toasts, { id, text }].slice(-6) }))
         setTimeout(() => get().dropToast(id), 2600)
       },
 

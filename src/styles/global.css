@@ -38,6 +38,7 @@
   --r-epic: #A25CFF;
   --r-mythic: #FF4FA3;
   --r-legend: #FFB020;
+  --r-divine: #00E0CF;
 
   --r-s: 12px;
   --r-m: 16px;
@@ -69,6 +70,7 @@ html[data-theme='dark'] {
   --sh-3: 0 10px 30px rgba(0, 0, 0, .55), 0 30px 70px rgba(0, 0, 0, .45);
   --sh-accent: 0 4px 16px rgba(84, 94, 255, .45), 0 12px 36px rgba(84, 94, 255, .3);
   --r-common: #7D8794;
+  --r-divine: #2BF5E2;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -157,7 +159,7 @@ html[data-theme='dark'] .app::after { mix-blend-mode: screen; opacity: .04; }
 .hdr .sub { font-size: 12px; color: var(--text-2); font-weight: 600; margin-top: 1px; }
 .hdr-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
-.back-btn {
+.back-btn, .icon-btn {
   width: 36px; height: 36px; border-radius: 50%;
   display: grid; place-items: center; flex: none;
   background: var(--bg-sub); color: var(--accent-1);
@@ -165,8 +167,10 @@ html[data-theme='dark'] .app::after { mix-blend-mode: screen; opacity: .04; }
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
   transition: transform .14s, background .2s;
 }
-html[data-theme='dark'] .back-btn { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
-.back-btn:active { transform: scale(.9); }
+html[data-theme='dark'] .back-btn,
+html[data-theme='dark'] .icon-btn { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06); }
+.back-btn:active, .icon-btn:active { transform: scale(.9); }
+.icon-btn { color: var(--text-2); font-size: 17px; }
 
 /* ═══ таб-бар ═══ */
 
@@ -857,3 +861,135 @@ html[data-theme='dark'] .mine-cell { box-shadow: var(--sh-1), inset 0 1px 0 rgba
   border-top: 1px solid var(--line);
 }
 .has-action-bar { padding-bottom: 92px; }
+
+/* ═══ дабл ═══ */
+
+.dbl-cell {
+  width: 54px; height: 56px; flex: none; border-radius: var(--r-s);
+  display: grid; place-items: center;
+  color: #fff; font-weight: 900; font-size: 16px;
+  box-shadow: var(--sh-1), inset 0 1px 0 rgba(255, 255, 255, .22);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+}
+.dbl-dot {
+  width: 20px; height: 20px; border-radius: 6px; display: inline-block;
+  box-shadow: var(--sh-1), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+.dbl-pick {
+  border-radius: var(--r-m); padding: 13px 8px; color: #fff;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  box-shadow: var(--sh-2), inset 0 1px 0 rgba(255, 255, 255, .25);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+  transition: transform .14s cubic-bezier(.3, 1.4, .5, 1);
+}
+.dbl-pick:active { transform: scale(.95); }
+
+/* ═══ кости ═══ */
+
+.dice-box {
+  background: var(--bg-elev); border-radius: var(--r-l); padding: 22px 18px 16px;
+  box-shadow: var(--sh-2); border: 1px solid var(--line);
+}
+.dice-val {
+  text-align: center; font-size: 46px; font-weight: 900; letter-spacing: -0.05em;
+  margin-bottom: 18px; transition: color .25s;
+}
+.dice-val.win { color: var(--green); text-shadow: 0 4px 20px rgba(31, 184, 90, .4); }
+.dice-val.lose { color: var(--red); text-shadow: 0 4px 20px rgba(240, 69, 58, .4); }
+.dice-track {
+  position: relative; height: 12px; border-radius: 6px;
+  background: linear-gradient(90deg, #FF6259, #CE2B21);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, .22);
+}
+.dice-fill {
+  position: absolute; top: 0; bottom: 0; border-radius: 6px;
+  background: linear-gradient(90deg, #34D66F, #0E9B47);
+  transition: left .18s, width .18s;
+}
+.dice-handle {
+  position: absolute; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px;
+  border-radius: 50%; background: #fff; z-index: 2;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .3), inset 0 0 0 4px var(--accent-1);
+  transition: left .18s;
+}
+.dice-hit {
+  position: absolute; top: -9px; width: 3px; height: 30px; margin-left: -1.5px;
+  background: var(--text); border-radius: 2px; z-index: 3;
+  box-shadow: 0 0 10px rgba(0, 0, 0, .35);
+  animation: pop .3s cubic-bezier(.2, 1.5, .4, 1);
+}
+.dice-scale {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--text-3); margin-top: 10px; font-weight: 700;
+}
+
+/* ═══ башня ═══ */
+
+.tower { display: flex; flex-direction: column; gap: 7px; }
+.tower-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 3px 6px; border-radius: var(--r-s);
+  transition: background .2s;
+}
+.tower-row.cur { background: var(--grad-soft); }
+.tower-num { width: 16px; font-size: 11px; color: var(--text-3); font-weight: 800; }
+.tower-mult { width: 48px; font-size: 11.5px; color: var(--text-2); font-weight: 700; text-align: right; }
+.tower-cell {
+  flex: 1; height: 42px; border-radius: 10px;
+  background: linear-gradient(180deg, var(--bg-sub), color-mix(in srgb, var(--bg-sub) 84%, var(--text-3)));
+  display: grid; place-items: center; font-size: 20px;
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1), inset 0 1px 0 rgba(255, 255, 255, .45);
+  transition: transform .13s cubic-bezier(.3, 1.4, .5, 1), background .25s, box-shadow .25s;
+}
+html[data-theme='dark'] .tower-cell { box-shadow: var(--sh-1), inset 0 1px 0 rgba(255, 255, 255, .05); }
+.tower-cell.active { border-color: var(--accent-1); }
+.tower-cell.active:active { transform: scale(.93); }
+.tower-cell.ok {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--green) 26%, var(--bg-sub)), color-mix(in srgb, var(--green) 14%, var(--bg-sub)));
+  box-shadow: 0 0 14px rgba(31, 184, 90, .32);
+}
+.tower-cell.boom {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--red) 40%, var(--bg-sub)), color-mix(in srgb, var(--red) 20%, var(--bg-sub)));
+  box-shadow: 0 0 20px rgba(240, 69, 58, .45);
+  animation: shake .45s;
+}
+
+/* ═══ слоты ═══ */
+
+.slots {
+  position: relative; display: flex; gap: 10px; justify-content: center;
+  padding: 14px; border-radius: var(--r-l);
+  background: linear-gradient(180deg, #2A1B4D, #140C2B);
+  box-shadow: var(--sh-2), inset 0 2px 10px rgba(0, 0, 0, .5);
+  border: 1px solid rgba(255, 255, 255, .08);
+}
+.slot-reel {
+  position: relative; width: 84px; height: 74px; overflow: hidden;
+  border-radius: var(--r-s);
+  background: linear-gradient(180deg, #FFFFFF, #E6E9F2);
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, .28);
+}
+.slot-reel::before, .slot-reel::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 18px; z-index: 2; pointer-events: none;
+}
+.slot-reel::before { top: 0; background: linear-gradient(180deg, rgba(0, 0, 0, .3), transparent); }
+.slot-reel::after { bottom: 0; background: linear-gradient(0deg, rgba(0, 0, 0, .3), transparent); }
+.slot-strip { display: flex; flex-direction: column; }
+.slot-sym {
+  height: 74px; display: grid; place-items: center; font-size: 38px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .22));
+}
+.slot-line {
+  position: absolute; left: 8px; right: 8px; top: 50%; height: 2px; margin-top: -1px;
+  background: linear-gradient(90deg, transparent, #FFB020, transparent);
+  box-shadow: 0 0 12px rgba(255, 176, 32, .8);
+  pointer-events: none; z-index: 3;
+}
+
+/* ═══ джекпот ═══ */
+
+.jp-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex: none;
+  box-shadow: 0 0 8px currentColor;
+}

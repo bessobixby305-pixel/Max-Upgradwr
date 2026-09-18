@@ -37,7 +37,7 @@ export default function ChatBot({ onBack, go }: { onBack: () => void; go: (r: Ro
         right={
           <>
             <BalancePill />
-            <button className="back-btn" onClick={clearChat} title="Очистить">🗑</button>
+            <button className="icon-btn" onClick={clearChat} title="Очистить" aria-label="Очистить">🗑</button>
           </>
         }
       />

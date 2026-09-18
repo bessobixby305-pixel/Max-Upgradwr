@@ -19,12 +19,18 @@ import Crash from './screens/games/Crash'
 import Contract from './screens/games/Contract'
 import Battle from './screens/games/Battle'
 import DailyWheel from './screens/games/DailyWheel'
+import Double from './screens/games/Double'
+import Dice from './screens/games/Dice'
+import Tower from './screens/games/Tower'
+import Slots from './screens/games/Slots'
+import Jackpot from './screens/games/Jackpot'
 
 export type Tab = 'chats' | 'games' | 'inv' | 'profile'
 export type Route =
   | { s: 'chatBot' } | { s: 'drops' } | { s: 'fair' } | { s: 'ach' }
   | { s: 'upgrade' } | { s: 'cases' } | { s: 'mines' } | { s: 'crash' }
   | { s: 'contract' } | { s: 'battle' } | { s: 'wheel' }
+  | { s: 'double' } | { s: 'dice' } | { s: 'tower' } | { s: 'slots' } | { s: 'jackpot' }
 
 const TABS: { id: Tab; ico: string; label: string }[] = [
   { id: 'chats', ico: '💬', label: 'Чаты' },
@@ -87,6 +93,11 @@ export default function App() {
       case 'contract': return <Contract onBack={pop} />
       case 'battle': return <Battle onBack={pop} />
       case 'wheel': return <DailyWheel onBack={pop} />
+      case 'double': return <Double onBack={pop} />
+      case 'dice': return <Dice onBack={pop} />
+      case 'tower': return <Tower onBack={pop} />
+      case 'slots': return <Slots onBack={pop} />
+      case 'jackpot': return <Jackpot onBack={pop} />
     }
   }
 

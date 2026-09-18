@@ -117,7 +117,7 @@ export default function Cases({ onBack }: { onBack: () => void }) {
         onBack={() => (active ? setActive(null) : onBack())}
         right={
           <>
-            {active && <button className="back-btn" onClick={() => setInfoOpen(true)}>ⓘ</button>}
+            {active && <button className="icon-btn" onClick={() => setInfoOpen(true)} aria-label="Шансы">ⓘ</button>}
             <BalancePill />
           </>
         }

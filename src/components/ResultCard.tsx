@@ -5,6 +5,7 @@ import { fmt } from '../core/economy'
 const KIND_EMO: Record<string, string> = {
   upgrade: '🎰', case: '📦', mines: '💣', crash: '🚀',
   contract: '📝', battle: '⚔️', bonus: '🎁',
+  dice: '🎲', double: '🔴', tower: '🗼', slots: '🎰', jackpot: '🏦',
 }
 
 export default function ResultCard({ r }: { r: GameResult }) {
