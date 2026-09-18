@@ -1,0 +1,28 @@
+appId: com.maxupgrader.game
+productName: MAX Upgrader
+copyright: MAX Upgrader
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - electron/**/*
+  - build/icon.png
+  - package.json
+win:
+  icon: build/icon.png
+  artifactName: MAX-Upgrader-${version}-${arch}.${ext}
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: MAX Upgrader
+portable:
+  artifactName: MAX-Upgrader-${version}-portable.exe
