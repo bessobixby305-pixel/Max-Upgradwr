@@ -59,8 +59,12 @@ export default function Battle({ onBack }: { onBack: () => void }) {
     setWinner(best)
 
     if (best === 0) {
-      g.win(pot)
-      for (const it of list[0].items) g.addItem(it.id)
+      // Победитель забирает предметы всех участников — это и есть банк.
+      let taken = 0
+      for (const p of list) {
+        for (const it of p.items) { g.addItem(it.id); taken += it.price }
+      }
+      g.recordWin(taken)
       g.bumpStats({ battlesWon: g.stats.battlesWon + 1, wins: g.stats.wins + 1 })
       confetti(hostRef.current, 130)
       sfx.bigWin()
@@ -75,8 +79,8 @@ export default function Battle({ onBack }: { onBack: () => void }) {
       kind: 'battle',
       title: `Битва · ${caseDef.name} ×${rounds}`,
       bet: cost,
-      payout: best === 0 ? pot : 0,
-      extra: best === 0 ? 'ты забрал банк' : `победил ${list[best].name}`,
+      payout: best === 0 ? list.reduce((sum, p) => sum + p.total, 0) : 0,
+      extra: best === 0 ? 'забрал все предметы' : `победил ${list[best].name}`,
     })
     setBusy(false)
     g.checkAchievements()
@@ -84,7 +88,7 @@ export default function Battle({ onBack }: { onBack: () => void }) {
 
   return (
     <div ref={hostRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Header title="Битва кейсов" sub={`банк ${fmt(pot)} MX`} onBack={onBack} right={<BalancePill />} />
+      <Header title="Битва кейсов" sub={`в банке ${fmt(pot)} MX предметами`} onBack={onBack} right={<BalancePill />} />
       <div className="screen">
         <div className="pad">
           {players.length > 0 && (
@@ -157,7 +161,7 @@ export default function Battle({ onBack }: { onBack: () => void }) {
             {busy ? 'Битва идёт…' : `В бой · ${fmt(cost)} MX`}
           </button>
           <p className="muted center" style={{ fontSize: 12.5, marginTop: 10 }}>
-            Победитель забирает весь банк и свои предметы.
+            Победитель забирает все выпавшие предметы — свои и соперников.
           </p>
         </div>
       </div>

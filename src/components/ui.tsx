@@ -22,7 +22,24 @@ export function Header({
 
 export function BalancePill() {
   const balance = useGame((s) => s.balance)
-  return <span className="balance-pill mono">💠 {fmt(balance)}</span>
+  const shown = useAnimatedNumber(balance, 520)
+  const [bump, setBump] = useState(false)
+  const prev = useRef(balance)
+
+  useEffect(() => {
+    if (prev.current !== balance) {
+      prev.current = balance
+      setBump(true)
+      const t = setTimeout(() => setBump(false), 460)
+      return () => clearTimeout(t)
+    }
+  }, [balance])
+
+  return (
+    <span className={'balance-pill mono' + (bump ? ' bump' : '')}>
+      💠 {fmt(shown)}
+    </span>
+  )
 }
 
 export function Sheet({
@@ -65,6 +82,7 @@ export function ItemCard({
       <div className="emo">{def.emo}</div>
       <div className="nm">{def.name}</div>
       <div className="px mono">{sub ?? fmt(def.price)}</div>
+      <span className="rbar" />
     </div>
   )
 }

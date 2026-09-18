@@ -32,14 +32,16 @@ export default function Inventory() {
       <Header title="Инвентарь" sub={`${inv.length} шт. · ${fmt(total)} MX`} right={<BalancePill />} />
       <div className="screen">
         <div className="pad">
-          <div className="chips" style={{ marginBottom: 12 }}>
-            {([['new', 'Новые'], ['price', 'Дорогие'], ['name', 'По имени']] as [Sort, string][]).map(([k, l]) => (
-              <button key={k} className={'chip' + (sort === k ? ' on' : '')} onClick={() => setSort(k)}>{l}</button>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <div className="chips" style={{ flexWrap: 'nowrap', overflowX: 'auto' }}>
+              {([['new', 'Новые'], ['price', 'Дорогие'], ['name', 'По имени']] as [Sort, string][]).map(([k, l]) => (
+                <button key={k} className={'chip' + (sort === k ? ' on' : '')} onClick={() => setSort(k)}>{l}</button>
+              ))}
+            </div>
             {inv.length > 0 && (
               <button
                 className="chip"
-                style={{ marginLeft: 'auto', color: 'var(--red)' }}
+                style={{ marginLeft: 'auto', color: 'var(--red)', flex: 'none' }}
                 onClick={() => { sellAll(); sfx.coin() }}
               >Продать всё</button>
             )}

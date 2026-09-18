@@ -5,6 +5,11 @@ on:
     branches: [main, 'claude/**']
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Тег релиза (например v1.1.0). Пусто — релиз не публикуется.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -70,7 +75,12 @@ jobs:
       - name: Collect APK
         run: |
           mkdir -p out
-          find android/app/build/outputs/apk -name '*.apk' -exec cp {} out/MAX-Upgrader.apk \;
+          VER=$(node -p "require('./package.json').version")
+          # отладочная подпись отличается от релизной, поэтому помечаем имя файла:
+          # такой APK не встанет поверх релизного, его надо ставить с нуля
+          SUFFIX=$([ -f android/keystore.properties ] && echo "" || echo "-debug")
+          find android/app/build/outputs/apk -name '*.apk' \
+            -exec cp {} "out/MAX-Upgrader-$VER$SUFFIX.apk" \;
           ls -la out
 
       - uses: actions/upload-artifact@v4
@@ -109,14 +119,22 @@ jobs:
   release:
     name: Publish release
     needs: [android, windows]
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.tag != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
 
+      - name: Flatten artifacts
+        run: |
+          mkdir -p files
+          find artifacts -type f \( -name '*.apk' -o -name '*.exe' \) -exec cp {} files/ \;
+          ls -la files
+
       - uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: MAX Upgrader ${{ inputs.tag || github.ref_name }}
+          files: files/*
           generate_release_notes: true

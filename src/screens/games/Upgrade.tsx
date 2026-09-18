@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import Wheel from '../../components/Wheel'
+import WinOverlay, { WinInfo } from '../../components/WinOverlay'
 import { BalancePill, BetInput, Header, ItemCard, Sheet } from '../../components/ui'
 import { MAX_MULT, MIN_MULT, UPGRADE_RTP, fmt } from '../../core/economy'
 import { ITEM_BY_ID, sortedByPrice } from '../../core/items'
-import { nearestItem } from '../../core/items'
 import { useGame } from '../../store/game'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
@@ -23,6 +23,7 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
   const [spinning, setSpinning] = useState(false)
   const [result, setResult] = useState<'win' | 'lose' | null>(null)
   const [auto, setAuto] = useState(0)
+  const [winInfo, setWinInfo] = useState<WinInfo | null>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const stopAuto = useRef(false)
 
@@ -74,9 +75,15 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
 
     const gained = win ? payout : 0
     if (win) {
-      g.win(gained)
-      const item = mode === 'item' ? target : nearestItem(gained)
-      if (item && gained >= item.price * 0.7) g.addItem(item.id)
+      // Награда одна: либо MX на баланс, либо предмет в инвентарь.
+      if (mode === 'item' && target) {
+        g.addItem(target.id)
+        g.recordWin(target.price)
+        setWinInfo({ itemId: target.id, label: `Апгрейд x${effMult.toFixed(2)}` })
+      } else {
+        g.win(gained)
+        if (effMult >= 5) setWinInfo({ amount: gained, label: `Апгрейд x${effMult.toFixed(2)}` })
+      }
       g.bumpStats({
         wins: g.stats.wins + 1,
         bestMult: Math.max(g.stats.bestMult, effMult),
@@ -117,7 +124,7 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }} ref={hostRef}>
       <Header title="Апгрейд" sub="честная игра · RTP 92%" onBack={onBack} right={<BalancePill />} />
-      <div className="screen" style={{ paddingBottom: 24 }}>
+      <div className="screen has-action-bar">
         <div className="pad">
           <div className="chips" style={{ marginBottom: 10 }}>
             <button className={'chip' + (mode === 'mult' ? ' on' : '')} onClick={() => setMode('mult')}>
@@ -149,8 +156,12 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
               <b className="mono">{(chance * 100).toFixed(2)}%</b>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-              <span className="muted">Выигрыш</span>
-              <b className="mono" style={{ color: 'var(--green)' }}>+{fmt(payout)} MX</b>
+              <span className="muted">{mode === 'item' ? 'Приз' : 'Выигрыш'}</span>
+              {mode === 'item' && target ? (
+                <b style={{ color: 'var(--green)' }}>{target.emo} в инвентарь</b>
+              ) : (
+                <b className="mono" style={{ color: 'var(--green)' }}>+{fmt(payout)} MX</b>
+              )}
             </div>
 
             {mode === 'mult' ? (
@@ -189,30 +200,32 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
             <BetInput value={bet} onChange={setBet} max={maxBet} />
           </div>
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-            <button className="btn" disabled={!canSpin} onClick={() => { stopAuto.current = false; void spin() }}>
-              {spinning ? 'Крутится…' : `Крутить · ${fmt(bet)} MX`}
-            </button>
-            <button
-              className="btn ghost"
-              style={{ width: 96 }}
-              onClick={() => {
-                if (auto > 0) { stopAuto.current = true; setAuto(0); return }
-                stopAuto.current = false
-                setAuto(10)
-                void spin()
-              }}
-            >
-              {auto > 0 ? `Стоп ${auto}` : 'Авто 10'}
-            </button>
-          </div>
-
           <p className="muted" style={{ fontSize: 12.5, marginTop: 14, lineHeight: 1.5 }}>
             Шанс = 92% ÷ множитель. Результат раунда считается из серверного сида,
             хэш которого показан заранее — проверить можно в Профиле → Честная игра.
           </p>
         </div>
       </div>
+
+      <div className="action-bar">
+        <button className="btn" disabled={!canSpin} onClick={() => { stopAuto.current = false; void spin() }}>
+          {spinning ? 'Крутится…' : `Крутить · ${fmt(bet)} MX`}
+        </button>
+        <button
+          className="btn ghost"
+          style={{ width: 102, flex: 'none' }}
+          onClick={() => {
+            if (auto > 0) { stopAuto.current = true; setAuto(0); return }
+            stopAuto.current = false
+            setAuto(10)
+            void spin()
+          }}
+        >
+          {auto > 0 ? `Стоп ${auto}` : 'Авто 10'}
+        </button>
+      </div>
+
+      <WinOverlay win={winInfo} onClose={() => setWinInfo(null)} />
 
       <Sheet open={pickOpen} onClose={() => setPickOpen(false)} title="Цель апгрейда">
         <div className="grid">

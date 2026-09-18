@@ -113,7 +113,7 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
           </div>
 
           <p className="muted center" style={{ fontSize: 11.5, padding: '22px 10px 0', lineHeight: 1.6 }}>
-            MAX Upgrader v1.0 · игра на виртуальную валюту MX.<br />
+            MAX Upgrader v1.1 · игра на виртуальную валюту MX.<br />
             Реальных денег, покупок и вывода средств нет.
           </p>
         </div>
@@ -174,17 +174,7 @@ function Toggle({ label, emo, on, set }: { label: string; emo: string; on: boole
       <span style={{ fontSize: 20 }}>{emo}</span>
       <span className="t">{label}</span>
       <span className="r">
-        <span style={{
-          display: 'inline-block', width: 46, height: 27, borderRadius: 999,
-          background: on ? 'var(--grad)' : 'var(--text-3)', position: 'relative', opacity: on ? 1 : .45,
-          transition: 'background .2s', verticalAlign: 'middle',
-        }}>
-          <span style={{
-            position: 'absolute', top: 3, left: on ? 22 : 3, width: 21, height: 21,
-            borderRadius: '50%', background: '#fff', transition: 'left .18s',
-            boxShadow: '0 1px 4px rgba(0,0,0,.25)',
-          }} />
-        </span>
+        <span className={'sw' + (on ? ' on' : '')}><i /></span>
       </span>
     </button>
   )

@@ -93,7 +93,11 @@ export interface GameState {
 
   // ——— деньги
   bet: (amount: number) => boolean
+  /** Зачислить выигрыш на баланс. */
   win: (amount: number) => void
+  /** Учесть ценность выигрыша в статистике, не трогая баланс
+   *  (когда наградой стал предмет, а не деньги). */
+  recordWin: (amount: number) => void
   addBalance: (amount: number) => void
 
   // ——— честность
@@ -179,6 +183,17 @@ export const useGame = create<GameState>()(
             },
           }
         })
+      },
+
+      recordWin: (amount) => {
+        if (amount <= 0) return
+        set((s) => ({
+          stats: {
+            ...s.stats,
+            totalWon: s.stats.totalWon + amount,
+            biggestWin: Math.max(s.stats.biggestWin, amount),
+          },
+        }))
       },
 
       addBalance: (amount) =>

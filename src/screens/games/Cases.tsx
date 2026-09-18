@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { BalancePill, Header, Sheet } from '../../components/ui'
+import WinOverlay, { WinInfo } from '../../components/WinOverlay'
 import { CASES, CaseDef, caseRtp, dropChance, pickDrop } from '../../core/cases'
 import { ITEM_BY_ID, ItemDef, RARITY_COLOR, rarityOf } from '../../core/items'
 import { fmt } from '../../core/economy'
@@ -21,6 +22,7 @@ export default function Cases({ onBack }: { onBack: () => void }) {
   const [rolling, setRolling] = useState(false)
   const [won, setWon] = useState<ItemDef[] | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
+  const [winInfo, setWinInfo] = useState<WinInfo | null>(null)
   const hostRef = useRef<HTMLDivElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
 
@@ -73,12 +75,13 @@ export default function Cases({ onBack }: { onBack: () => void }) {
     }
     await wait(dur + 150)
 
+    // Награда за кейс — сам предмет; деньги за него даёт продажа в инвентаре.
     let total = 0
     for (const item of results) {
       g.addItem(item.id)
       total += item.price
     }
-    g.win(total)
+    g.recordWin(total)
     g.bumpStats({ casesOpened: g.stats.casesOpened + count })
     g.pushResult({
       kind: 'case',
@@ -87,7 +90,12 @@ export default function Cases({ onBack }: { onBack: () => void }) {
       itemId: results.reduce((a, b) => (a.price > b.price ? a : b)).id,
     })
 
-    const best = Math.max(...results.map((r) => r.price))
+    const bestItem = results.reduce((a, b) => (a.price > b.price ? a : b))
+    const best = bestItem.price
+    // показываем крупный оверлей, когда дроп заметно дороже кейса
+    if (best >= active.price * 3) {
+      setWinInfo({ itemId: bestItem.id, label: `Кейс «${active.name}»` })
+    }
     if (total > price) {
       confetti(hostRef.current, best > price * 8 ? 140 : 70)
       best > price * 8 ? sfx.bigWin() : sfx.win()
@@ -114,7 +122,7 @@ export default function Cases({ onBack }: { onBack: () => void }) {
           </>
         }
       />
-      <div className="screen">
+      <div className={"screen" + (active ? " has-action-bar" : "")}>
         <div className="pad">
           {!active ? (
             <div className="grid2">
@@ -160,16 +168,25 @@ export default function Cases({ onBack }: { onBack: () => void }) {
                   <div className="center" style={{ fontWeight: 800, marginBottom: 10 }}>
                     {won.reduce((s, w) => s + w.price, 0) >= price ? '🎉 Выпало' : 'Выпало'}
                   </div>
-                  <div className="grid">
+                  <div
+                    className={won.length >= 3 ? 'grid' : ''}
+                    style={won.length < 3
+                      ? { display: 'flex', justifyContent: 'center', gap: 10 }
+                      : undefined}
+                  >
                     {won.map((w, i) => (
                       <div
                         key={i}
-                        className="item"
-                        style={{ ['--rc' as any]: RARITY_COLOR[rarityOf(w.price)] }}
+                        className={'item ' + rarityOf(w.price)}
+                        style={{
+                          ['--rc' as any]: RARITY_COLOR[rarityOf(w.price)],
+                          minWidth: won.length < 3 ? 124 : undefined,
+                        }}
                       >
                         <div className="emo">{w.emo}</div>
                         <div className="nm">{w.name}</div>
                         <div className="px mono">{fmt(w.price)}</div>
+                        <span className="rbar" />
                       </div>
                     ))}
                   </div>
@@ -191,13 +208,20 @@ export default function Cases({ onBack }: { onBack: () => void }) {
                 >⚡ Быстро</button>
               </div>
 
-              <button className="btn" disabled={rolling || g.balance < price} onClick={open}>
-                {rolling ? 'Открываем…' : `Открыть за ${fmt(price)} MX`}
-              </button>
             </>
           )}
         </div>
       </div>
+
+      {active && (
+        <div className="action-bar">
+          <button className="btn" disabled={rolling || g.balance < price} onClick={open}>
+            {rolling ? 'Открываем…' : `Открыть за ${fmt(price)} MX`}
+          </button>
+        </div>
+      )}
+
+      <WinOverlay win={winInfo} onClose={() => setWinInfo(null)} />
 
       <Sheet open={infoOpen} onClose={() => setInfoOpen(false)} title={active ? `Шансы · ${active.name}` : ''}>
         {active && (
