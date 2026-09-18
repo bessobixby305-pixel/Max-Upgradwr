@@ -15,7 +15,7 @@ const STRIP = 62
 const ROLL_MS = 4200
 const FAST_MS = 700
 
-export default function Cases({ onBack }: { onBack: () => void }) {
+export default function Cases({ onBack, asTab }: { onBack: () => void; asTab?: boolean }) {
   const g = useGame()
   const [active, setActive] = useState<CaseDef | null>(null)
   const [count, setCount] = useState(1)
@@ -116,7 +116,7 @@ export default function Cases({ onBack }: { onBack: () => void }) {
       <Header
         title={active ? active.name : 'Кейсы'}
         sub={active ? `RTP ${(caseRtp(active) * 100).toFixed(0)}%` : 'открывай и собирай'}
-        onBack={() => (active ? setActive(null) : onBack())}
+        onBack={asTab && !active ? undefined : () => (active ? setActive(null) : onBack())}
         right={
           <>
             {active && (

@@ -3,7 +3,7 @@
 export type IconName =
   | 'chat' | 'games' | 'bag' | 'user'
   | 'back' | 'info' | 'trash' | 'check' | 'coin' | 'close'
-  | 'theme' | 'sound' | 'vibrate' | 'bolt' | 'megaphone'
+  | 'home' | 'theme' | 'sound' | 'vibrate' | 'bolt' | 'megaphone'
   | 'trophy' | 'shield' | 'ticket' | 'save' | 'reset' | 'chevron' | 'gift' | 'wheel'
 
 const PATHS: Record<IconName, { d: string; fill?: boolean }[]> = {
@@ -34,6 +34,10 @@ const PATHS: Record<IconName, { d: string; fill?: boolean }[]> = {
   coin: [
     { d: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z' },
     { d: 'M12 7.2v9.6M14.4 9.3c-.5-.7-1.4-1.1-2.4-1.1-1.4 0-2.4.8-2.4 1.9 0 2.6 4.9 1.4 4.9 4 0 1.1-1.1 1.9-2.5 1.9-1.1 0-2-.4-2.5-1.2' },
+  ],
+  home: [
+    { d: 'M3.6 10.4 12 3.8l8.4 6.6v8.1a1.5 1.5 0 0 1-1.5 1.5H5.1a1.5 1.5 0 0 1-1.5-1.5v-8.1Z' },
+    { d: 'M9.4 20v-5.6h5.2V20' },
   ],
   theme: [
     { d: 'M12 21a9 9 0 1 1 0-18c1 0 1.7.8 1.7 1.7 0 .5-.2.9-.5 1.2a1.7 1.7 0 0 0 1.2 2.9h2a3.6 3.6 0 0 1 3.6 3.6C20 18.1 16.4 21 12 21Z' },

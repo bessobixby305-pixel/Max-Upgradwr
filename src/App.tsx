@@ -3,8 +3,10 @@ import { Capacitor } from '@capacitor/core'
 import { App as CapApp } from '@capacitor/app'
 import { useGame } from './store/game'
 import { Toasts } from './components/ui'
+import BonusSheet from './components/BonusSheet'
 import Icon, { IconName } from './components/Icon'
 import { startDropsFeed } from './lib/drops'
+import Home from './screens/Home'
 import Chats from './screens/Chats'
 import ChatBot from './screens/ChatBot'
 import DropsChannel from './screens/DropsChannel'
@@ -26,23 +28,26 @@ import Tower from './screens/games/Tower'
 import Slots from './screens/games/Slots'
 import Jackpot from './screens/games/Jackpot'
 
-export type Tab = 'chats' | 'games' | 'inv' | 'profile'
+export type Tab = 'home' | 'games' | 'cases' | 'inv' | 'chats'
 export type Route =
   | { s: 'chatBot' } | { s: 'drops' } | { s: 'fair' } | { s: 'ach' }
   | { s: 'upgrade' } | { s: 'cases' } | { s: 'mines' } | { s: 'crash' }
   | { s: 'contract' } | { s: 'battle' } | { s: 'wheel' }
   | { s: 'double' } | { s: 'dice' } | { s: 'tower' } | { s: 'slots' } | { s: 'jackpot' }
+  | { s: 'profile' }
 
 const TABS: { id: Tab; ico: IconName; label: string }[] = [
-  { id: 'chats', ico: 'chat', label: 'Чаты' },
+  { id: 'home', ico: 'home', label: 'Главная' },
   { id: 'games', ico: 'games', label: 'Игры' },
+  { id: 'cases', ico: 'gift', label: 'Кейсы' },
   { id: 'inv', ico: 'bag', label: 'Инвентарь' },
-  { id: 'profile', ico: 'user', label: 'Профиль' },
+  { id: 'chats', ico: 'chat', label: 'Чаты' },
 ]
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>('games')
+  const [tab, setTab] = useState<Tab>('home')
   const [stack, setStack] = useState<Route[]>([])
+  const [bonusOpen, setBonusOpen] = useState(false)
   const theme = useGame((s) => s.settings.theme)
   const unread = useGame((s) => s.messages.filter((m) => m.chat === 'bot').length)
 
@@ -99,6 +104,7 @@ export default function App() {
       case 'tower': return <Tower onBack={pop} />
       case 'slots': return <Slots onBack={pop} />
       case 'jackpot': return <Jackpot onBack={pop} />
+      case 'profile': return <Profile go={push} onBack={pop} />
     }
   }
 
@@ -106,10 +112,19 @@ export default function App() {
     <div className="app">
       {top ? renderStack() : (
         <>
-          {tab === 'chats' && <Chats go={push} />}
+          {tab === 'home' && (
+            <Home
+              go={push}
+              openProfile={() => push({ s: 'profile' })}
+              openBonus={() => setBonusOpen(true)}
+              openGames={() => setTab('games')}
+              openCases={() => setTab('cases')}
+            />
+          )}
           {tab === 'games' && <Games go={push} />}
+          {tab === 'cases' && <Cases onBack={() => setTab('home')} asTab />}
           {tab === 'inv' && <Inventory />}
-          {tab === 'profile' && <Profile go={push} />}
+          {tab === 'chats' && <Chats go={push} />}
         </>
       )}
 
@@ -130,6 +145,8 @@ export default function App() {
           ))}
         </nav>
       )}
+
+      <BonusSheet open={bonusOpen} onClose={() => setBonusOpen(false)} go={push} />
 
       <Toasts />
     </div>

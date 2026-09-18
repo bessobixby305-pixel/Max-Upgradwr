@@ -1,13 +1,13 @@
 import { Route } from '../App'
 import { BalancePill, Header } from '../components/ui'
-import { DAILY_COOLDOWN, WHEEL_COOLDOWN, dailyReward, fmt, levelFromXp, titleFor } from '../core/economy'
+import { levelFromXp, titleFor } from '../core/economy'
 import { CASES } from '../core/cases'
 import { useGame } from '../store/game'
 import { sfx } from '../lib/fx'
 
-interface G { r: Route['s']; t: string; s: string; ico: string; tint: string }
+export interface G { r: Route['s']; t: string; s: string; ico: string; tint: string }
 
-const GAMES: G[] = [
+export const GAMES: G[] = [
   { r: 'upgrade', t: 'Апгрейд', s: 'x1.05 — x50', ico: '🎰', tint: '#A855F7' },
   { r: 'cases', t: 'Кейсы', s: `${CASES.length} кейсов`, ico: '📦', tint: '#F0468C' },
   { r: 'mines', t: 'Мины', s: 'поле 5×5', ico: '💣', tint: '#3DD68C' },
@@ -31,56 +31,14 @@ export function tintVars(c: string): React.CSSProperties {
 }
 
 export default function Games({ go }: { go: (r: Route) => void }) {
-  const g = useGame()
-  const lvl = levelFromXp(g.xp)
-  const dailyReady = Date.now() - g.daily.last >= DAILY_COOLDOWN
-  const wheelReady = Date.now() - g.wheelLast >= WHEEL_COOLDOWN
-  const nextStreak = Math.min(g.daily.streak + 1, 7)
-
-  const claim = () => {
-    const r = g.claimDaily()
-    if (r) { sfx.coin(); g.toast(`🎁 +${fmt(r)} MX · день ${g.daily.streak}`) }
-  }
+  const xp = useGame((s) => s.xp)
+  const lvl = levelFromXp(xp)
 
   return (
     <>
       <Header title="Игры" sub={`${titleFor(lvl.lvl)} · ур. ${lvl.lvl}`} right={<BalancePill />} />
       <div className="screen">
         <div className="pad">
-          <div className="card" style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <b style={{ fontSize: 15 }}>Уровень {lvl.lvl}</b>
-              <span className="muted mono" style={{ marginLeft: 'auto', fontSize: 12.5 }}>
-                {fmt(g.xp - lvl.cur)} / {fmt(lvl.next - lvl.cur)} XP
-              </span>
-            </div>
-            <div className="progress"><i style={{ width: `${Math.round(lvl.progress * 100)}%` }} /></div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-            <button
-              className={'btn' + (dailyReady ? '' : ' ghost')}
-              disabled={!dailyReady}
-              onClick={claim}
-              style={{ flexDirection: 'column', gap: 1, padding: '11px 10px' }}
-            >
-              <span style={{ fontSize: 14 }}>Ежедневный бонус</span>
-              <span style={{ fontSize: 11.5, opacity: .85, fontWeight: 600 }}>
-                {dailyReady ? `+${fmt(dailyReward(nextStreak))} · день ${nextStreak}` : 'завтра'}
-              </span>
-            </button>
-            <button
-              className="btn outline"
-              onClick={() => go({ s: 'wheel' })}
-              style={{ flexDirection: 'column', gap: 1, padding: '11px 10px' }}
-            >
-              <span style={{ fontSize: 14 }}>Колесо дня</span>
-              <span style={{ fontSize: 11.5, opacity: .85, fontWeight: 600 }}>
-                {wheelReady ? 'бесплатно' : 'через 8 ч'}
-              </span>
-            </button>
-          </div>
-
           <div className="grid2">
             {GAMES.map((x) => (
               <button
@@ -96,21 +54,6 @@ export default function Games({ go }: { go: (r: Route) => void }) {
             ))}
           </div>
 
-          {g.balance <= 50 && (
-            <div className="card" style={{ marginTop: 14, textAlign: 'center' }}>
-              <b>Закончились MX?</b>
-              <p className="muted" style={{ fontSize: 13 }}>
-                Забери спасательный круг — 100 MX раз в 15 минут.
-              </p>
-              <button
-                className="btn"
-                onClick={() => {
-                  if (g.claimRescue()) { sfx.coin(); g.toast('🛟 +100 MX') }
-                  else g.toast('Ещё рано, подожди немного')
-                }}
-              >Забрать 100 MX</button>
-            </div>
-          )}
         </div>
       </div>
     </>

@@ -6,7 +6,7 @@ import { useGame } from '../store/game'
 import Icon, { IconName } from '../components/Icon'
 import { sfx } from '../lib/fx'
 
-export default function Profile({ go }: { go: (r: Route) => void }) {
+export default function Profile({ go, onBack }: { go: (r: Route) => void; onBack?: () => void }) {
   const g = useGame()
   const lvl = levelFromXp(g.xp)
   const [promoOpen, setPromoOpen] = useState(false)
@@ -19,7 +19,7 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
 
   return (
     <>
-      <Header title="Профиль" right={<BalancePill />} />
+      <Header title="Профиль" onBack={onBack} right={<BalancePill />} />
       <div className="screen">
         <div className="pad">
           <div className="card center" style={{ marginBottom: 14 }}>
@@ -116,7 +116,7 @@ export default function Profile({ go }: { go: (r: Route) => void }) {
           </div>
 
           <p className="muted center" style={{ fontSize: 11.5, padding: '22px 10px 0', lineHeight: 1.6 }}>
-            MAX Upgrader v1.5 · игра на виртуальную валюту MX.<br />
+            MAX Upgrader v1.6 · игра на виртуальную валюту MX.<br />
             Реальных денег, покупок и вывода средств нет.
           </p>
         </div>

@@ -231,6 +231,13 @@ export const useGame = create<GameState>()(
           inventory: [it, ...s.inventory],
           stats: { ...s.stats, bestItemPrice: Math.max(s.stats.bestItemPrice, def?.price ?? 0) },
         }))
+        // свой дроп виден в общей ленте наравне с чужими
+        if (def) {
+          get().pushDrop({
+            author: { name: 'Ты', emo: '🦄' },
+            result: { kind: 'case', title: 'Дроп', bet: 0, payout: def.price, itemId: id },
+          })
+        }
         return it
       },
 
