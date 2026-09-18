@@ -5,6 +5,7 @@ import { CASES, CaseDef, caseRtp, dropChance, pickDrop } from '../../core/cases'
 import { ITEM_BY_ID, ItemDef, RARITY_COLOR, rarityOf } from '../../core/items'
 import { fmt } from '../../core/economy'
 import Icon from '../../components/Icon'
+import TileArt from '../../components/TileArt'
 import { tintVars } from '../Games'
 import { useGame } from '../../store/game'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
@@ -139,7 +140,7 @@ export default function Cases({ onBack, asTab }: { onBack: () => void; asTab?: b
                   style={tintVars(c.tint)}
                   onClick={() => { setActive(c); sfx.click() }}
                 >
-                  <span className="gico">{c.emo}</span>
+                  <TileArt art={c.art} emo={c.emo} />
                   <span className="gt">{c.name}</span>
                   <span className="gs mono">{fmt(c.price)} MX</span>
                 </button>

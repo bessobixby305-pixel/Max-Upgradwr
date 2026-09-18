@@ -3,13 +3,14 @@ import { BalancePill, Header } from '../components/ui'
 import { levelFromXp, titleFor } from '../core/economy'
 import { CASES } from '../core/cases'
 import { useGame } from '../store/game'
+import TileArt from '../components/TileArt'
 import { sfx } from '../lib/fx'
 
-export interface G { r: Route['s']; t: string; s: string; ico: string; tint: string }
+export interface G { r: Route['s']; t: string; s: string; ico: string; tint: string; art?: string }
 
 export const GAMES: G[] = [
-  { r: 'upgrade', t: 'Апгрейд', s: 'x1.05 — x50', ico: '🎰', tint: '#A855F7' },
-  { r: 'cases', t: 'Кейсы', s: `${CASES.length} кейсов`, ico: '📦', tint: '#F0468C' },
+  { r: 'upgrade', t: 'Апгрейд', s: 'x1.05 — x50', ico: '🎰', tint: '#A855F7', art: 'game-upgrade' },
+  { r: 'cases', t: 'Кейсы', s: `${CASES.length} кейсов`, ico: '📦', tint: '#F0468C', art: 'game-cases' },
   { r: 'mines', t: 'Мины', s: 'поле 5×5', ico: '💣', tint: '#3DD68C' },
   { r: 'crash', t: 'Краш', s: 'успей забрать', ico: '🚀', tint: '#FF9A2E' },
   { r: 'contract', t: 'Контракт', s: '3–10 предметов', ico: '📝', tint: '#7C5CFF' },
@@ -47,7 +48,7 @@ export default function Games({ go }: { go: (r: Route) => void }) {
                 style={tintVars(x.tint)}
                 onClick={() => { sfx.click(); go({ s: x.r } as Route) }}
               >
-                <span className="gico">{x.ico}</span>
+                <TileArt art={x.art} emo={x.ico} />
                 <span className="gt">{x.t}</span>
                 <span className="gs">{x.s}</span>
               </button>

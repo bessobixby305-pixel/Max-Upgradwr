@@ -1,6 +1,7 @@
 import { Route } from '../App'
 import DropTicker from '../components/DropTicker'
 import Icon from '../components/Icon'
+import TileArt from '../components/TileArt'
 import { BalancePill } from '../components/ui'
 import { CASES } from '../core/cases'
 import { DAILY_COOLDOWN, WHEEL_COOLDOWN, fmt, levelFromXp, titleFor } from '../core/economy'
@@ -66,7 +67,7 @@ export default function Home({ go, openProfile, openBonus, openGames, openCases 
               style={tintVars(x.tint)}
               onClick={() => { sfx.click(); go({ s: x.r } as Route) }}
             >
-              <span className="gico">{x.ico}</span>
+              <TileArt art={x.art} emo={x.ico} />
               <span className="gt">{x.t}</span>
               <span className="gs">{x.s}</span>
             </button>
@@ -86,7 +87,7 @@ export default function Home({ go, openProfile, openBonus, openGames, openCases 
                 style={tintVars(c.tint)}
                 onClick={() => { sfx.click(); openCases() }}
               >
-                <span className="gico">{c.emo}</span>
+                <TileArt art={c.art} emo={c.emo} />
                 <span className="gt">{c.name}</span>
                 <span className="gs mono">{fmt(c.price)} MX</span>
               </button>

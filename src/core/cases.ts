@@ -7,6 +7,8 @@ export interface CaseDef {
   emo: string
   price: number
   tint: string
+  /** имя файла в public/art без расширения */
+  art?: string
   drops: CaseDrop[]
 }
 
