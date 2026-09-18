@@ -24,8 +24,28 @@ services:
       DATABASE_URL: postgresql://maxup:${DB_PASSWORD}@db:5432/maxupgrader
       JWT_SECRET: ${JWT_SECRET:?нужен JWT_SECRET}
       PORT: 3000
+    expose:
+      - "3000"
     ports:
+      # только для локальной проверки с самого сервера
       - "127.0.0.1:3000:3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - server
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?нужен API_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:

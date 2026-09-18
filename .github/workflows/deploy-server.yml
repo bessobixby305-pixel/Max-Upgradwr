@@ -21,12 +21,19 @@ jobs:
         id: gate
         env:
           HOST: ${{ secrets.SSH_HOST }}
+          DOMAIN: ${{ secrets.API_DOMAIN }}
         run: |
           if [ -z "$HOST" ]; then
             echo "SSH_HOST не задан — деплой пропущен"
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -z "$DOMAIN" ]; then
+            echo "API_DOMAIN не задан — HTTPS-проверка пропущена"
+            echo "has_domain=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_domain=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set up SSH
@@ -49,7 +56,8 @@ jobs:
         if: steps.gate.outputs.ready == 'true'
         run: |
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" bash -s <<'REMOTE'
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "API_DOMAIN='${{ secrets.API_DOMAIN }}' bash -s" <<'REMOTE'
           set -e
           cd ~/max-upgrader-server
           # секреты живут только на сервере, в репозиторий не попадают
@@ -57,7 +65,24 @@ jobs:
             echo "DB_PASSWORD=$(openssl rand -hex 24)" > .env
             echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
           fi
-          sudo docker compose up -d --build
+          # домен приходит из секрета репозитория и перезаписывается на каждом деплое
+          grep -v -e '^API_DOMAIN=' .env > .env.next || true
+          echo "API_DOMAIN=${API_DOMAIN}" >> .env.next
+          # страховка: не подменяем .env, если пропали сгенерированные секреты
+          if grep -q '^DB_PASSWORD=' .env.next && grep -q '^JWT_SECRET=' .env.next; then
+            mv .env.next .env
+          else
+            echo "не нашёл DB_PASSWORD/JWT_SECRET в новом .env — оставляю старый"
+            rm -f .env.next
+            exit 1
+          fi
+          if [ -n "${API_DOMAIN}" ]; then
+            sudo docker compose up -d --build
+          else
+            # без домена Caddy поднимать нечему — работает только внутренний API
+            echo "API_DOMAIN не задан — HTTPS-фронт пропущен"
+            sudo docker compose up -d --build db server
+          fi
           sudo docker compose ps
           REMOTE
 
@@ -66,3 +91,16 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
             'for i in $(seq 1 20); do curl -fsS http://127.0.0.1:3000/health && exit 0; sleep 3; done; exit 1'
+
+      - name: Smoke check over HTTPS
+        if: steps.gate.outputs.ready == 'true' && steps.gate.outputs.has_domain == 'true'
+        env:
+          DOMAIN: ${{ secrets.API_DOMAIN }}
+        run: |
+          # первый сертификат Let's Encrypt выписывается до минуты
+          for i in $(seq 1 30); do
+            if curl -fsS "https://$DOMAIN/health"; then exit 0; fi
+            sleep 5
+          done
+          echo "HTTPS не поднялся — смотри: sudo docker compose logs caddy"
+          exit 1
