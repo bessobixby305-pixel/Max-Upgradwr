@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { FairState, newFairState, rollFloat } from '../core/fair'
 import { ITEM_BY_ID, ItemDef } from '../core/items'
+import { ADMIN_UNLOCK, Reward, makeCode, readCode } from '../core/admincode'
 import {
   ACHIEVEMENTS, AchStats, DAILY_COOLDOWN, DAILY_RESET, RESCUE_AMOUNT, RESCUE_COOLDOWN,
   PROMOS, RESCUE_THRESHOLD, SELL_RATE, START_BALANCE, dailyReward, levelFromXp, xpForBet,
@@ -101,6 +102,10 @@ export interface GameState {
   promos: string[]
   toasts: { id: string; text: string }[]
   createdAt: number
+  /** админ-панель разблокирована на этом устройстве */
+  admin: boolean
+  /** коды, выпущенные с этого устройства — чтобы не потерять */
+  adminCodes: { code: string; amount: number; items: string[]; at: number }[]
 
   // ——— деньги
   bet: (amount: number) => boolean
@@ -140,6 +145,12 @@ export interface GameState {
   claimRescue: () => boolean
   redeemPromo: (code: string) => { ok: boolean; msg: string }
 
+  // ——— админ
+  setAdmin: (on: boolean) => void
+  issueCode: (r: Reward) => string
+  forgetCode: (code: string) => void
+  setXp: (xp: number) => void
+
   // ——— прочее
   setSettings: (p: Partial<Settings>) => void
   toast: (text: string) => void
@@ -169,6 +180,8 @@ export const useGame = create<GameState>()(
       promos: [],
       toasts: [],
       createdAt: Date.now(),
+      admin: false,
+      adminCodes: [],
 
       bet: (amount) => {
         if (amount <= 0 || get().balance < amount) return false
@@ -355,7 +368,39 @@ export const useGame = create<GameState>()(
       redeemPromo: (code) => {
         const c = code.trim().toUpperCase()
         if (!c) return { ok: false, msg: 'Введите код' }
+
+        if (c === ADMIN_UNLOCK) {
+          if (get().admin) return { ok: false, msg: 'Админ-панель уже открыта' }
+          set({ admin: true })
+          return { ok: true, msg: 'Админ-панель открыта — она в профиле' }
+        }
+
         if (get().promos.includes(c)) return { ok: false, msg: 'Код уже использован' }
+
+        // подписанный код, выпущенный из админки: работает на любом устройстве
+        const signed = readCode(c)
+        if (signed) {
+          set((s) => ({ promos: [...s.promos, c] }))
+          const parts: string[] = []
+          let payout = 0
+          if (signed.amount > 0) {
+            get().addBalance(signed.amount)
+            payout += signed.amount
+            parts.push(`+${signed.amount.toLocaleString('ru-RU')} MX`)
+          }
+          for (const id of signed.items) {
+            const def = ITEM_BY_ID[id]
+            if (!def) continue
+            get().addItem(id)
+            get().recordWin(def.price)
+            payout += def.price
+            parts.push(def.emo + ' ' + def.name)
+          }
+          get().pushResult({ kind: 'bonus', title: 'Промокод', bet: 0, payout, extra: c })
+          get().checkAchievements()
+          return { ok: true, msg: parts.join(' · ') || 'Код принят' }
+        }
+
         const p = PROMOS[c]
         if (!p) return { ok: false, msg: 'Неверный код' }
         set((s) => ({ promos: [...s.promos, c] }))
@@ -383,6 +428,24 @@ export const useGame = create<GameState>()(
         get().checkAchievements()
         return { ok: true, msg: parts.join(' · ') || p.label }
       },
+
+      setAdmin: (on) => set({ admin: on }),
+
+      issueCode: (r) => {
+        const code = makeCode(r)
+        set((s) => ({
+          adminCodes: [
+            { code, amount: r.amount, items: r.items, at: Date.now() },
+            ...s.adminCodes.filter((x) => x.code !== code),
+          ].slice(0, 60),
+        }))
+        return code
+      },
+
+      forgetCode: (code) =>
+        set((s) => ({ adminCodes: s.adminCodes.filter((x) => x.code !== code) })),
+
+      setXp: (xp) => set({ xp: Math.max(0, Math.round(xp)) }),
 
       setSettings: (p) => set((s) => ({ settings: { ...s.settings, ...p } })),
 

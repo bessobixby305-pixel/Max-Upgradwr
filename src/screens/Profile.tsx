@@ -64,6 +64,13 @@ export default function Profile({ go, onBack }: { go: (r: Route) => void; onBack
               <span className="t">Честная игра</span>
               <span className="r">раундов: {g.fair.nonce}</span>
             </button>
+            {g.admin && (
+              <button className="row" onClick={() => go({ s: 'admin' })}>
+                <Icon name="shield" size={20} className="row-ico" style={{ color: 'var(--accent)' }} />
+                <span className="t" style={{ color: 'var(--accent)' }}>Админ-панель</span>
+                <span className="r"><Icon name="chevron" size={16} /></span>
+              </button>
+            )}
             <button className="row" onClick={() => { setPromoOpen(true); sfx.click() }}>
               <Icon name="ticket" size={20} className="row-ico" />
               <span className="t">Промокод</span>
@@ -116,7 +123,7 @@ export default function Profile({ go, onBack }: { go: (r: Route) => void; onBack
           </div>
 
           <p className="muted center" style={{ fontSize: 11.5, padding: '22px 10px 0', lineHeight: 1.6 }}>
-            MAX Upgrader v1.6 · игра на виртуальную валюту MX.<br />
+            MAX Upgrader v1.7 · игра на виртуальную валюту MX.<br />
             Реальных денег, покупок и вывода средств нет.
           </p>
         </div>
