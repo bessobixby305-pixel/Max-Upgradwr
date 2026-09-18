@@ -1,9 +1,12 @@
+import './fasthmac.js'
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import rateLimit from '@fastify/rate-limit'
 import { db } from './db.js'
 import { authRoutes } from './auth.js'
 import { profileRoutes } from './profile.js'
+import { playRoutes } from './play.js'
+import { liveRoutes } from './live.js'
 
 const SECRET = process.env.JWT_SECRET
 if (!SECRET || SECRET.length < 16) {
@@ -18,7 +21,8 @@ const app = Fastify({
 
 await app.register(cors, { origin: true, credentials: true })
 await app.register(rateLimit, {
-  max: 120,
+  // игра шлёт по запросу на раунд, автоспин даёт всплески
+  max: 600,
   timeWindow: '1 minute',
   keyGenerator: (req) => req.ip,
 })
@@ -30,6 +34,8 @@ app.get('/health', async () => {
 
 authRoutes(app, SECRET)
 profileRoutes(app, SECRET)
+playRoutes(app, SECRET)
+liveRoutes(app, SECRET)
 
 const port = Number(process.env.PORT ?? 3000)
 await app.listen({ port, host: '0.0.0.0' })

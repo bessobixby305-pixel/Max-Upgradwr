@@ -11,7 +11,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "test": "tsx test/run.ts"
+    "test": "tsx test/rtp.ts && tsx test/run.ts && tsx test/play.ts",
+    "test:rtp": "tsx test/rtp.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",

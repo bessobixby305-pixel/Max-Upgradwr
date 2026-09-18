@@ -28,6 +28,7 @@ model User {
   seeds     Seed[]
   promoUses PromoUse[]
   sessions  Session[]
+  live      LiveRound[]
 
   @@index([lastSeenAt])
 }
@@ -49,6 +50,30 @@ model Profile {
   bestMult     Float  @default(0)
   biggestWin   BigInt @default(0)
   maxBalance   BigInt @default(1000)
+
+  /// расширенная статистика — зеркало клиентской, нужна для достижений
+  bestItemPrice  Int   @default(0)
+  minesCashouts  Int   @default(0)
+  crashCashouts  Int   @default(0)
+  bestCrash      Float @default(0)
+  contracts      Int   @default(0)
+  battlesWon     Int   @default(0)
+  towerCashouts  Int   @default(0)
+  towerBestFloor Int   @default(0)
+  slotSpins      Int   @default(0)
+  slotJackpots   Int   @default(0)
+  doubleGreens   Int   @default(0)
+  diceWins       Int   @default(0)
+  jackpotWins    Int   @default(0)
+
+  /// выданные достижения — награда начисляется один раз
+  achievements String[] @default([])
+
+  /// кулдауны бонусов считаются сервером, а не часами телефона
+  dailyAt     DateTime?
+  dailyStreak Int       @default(0)
+  wheelAt     DateTime?
+  rescueAt    DateTime?
 
   /// перенос локального сохранения делается один раз
   importedAt DateTime?
@@ -82,6 +107,7 @@ model Seed {
   createdAt      DateTime  @default(now())
 
   rounds Round[]
+  live   LiveRound[]
 
   @@index([userId, active])
 }
@@ -104,6 +130,29 @@ model Round {
 
   @@index([userId, createdAt])
   @@index([game, createdAt])
+}
+
+/// Незакрытый раунд игры с продолжением: мины, башня, краш.
+/// Раскладка лежит на сервере, клиент её не видит до конца раунда.
+model LiveRound {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  seedId String
+  seed   Seed   @relation(fields: [seedId], references: [id], onDelete: Cascade)
+
+  game     String
+  bet      BigInt
+  nonce    Int
+  /// скрытое: мины, безопасные клетки этажей, точка краша
+  secret   Json
+  /// ход игры: открытые клетки, пройденные этажи
+  progress Json
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@index([userId, endedAt])
 }
 
 /// Сессии: refresh-токен хранится хэшем, access живёт недолго и в базу не пишется.
