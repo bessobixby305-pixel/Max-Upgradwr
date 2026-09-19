@@ -156,3 +156,11 @@ export async function serverCall<T>(path: string, body: Record<string, unknown> 
     throw new Error(e instanceof ApiError ? e.message : 'Сервер не ответил')
   })
 }
+
+/** Чтение состояния: списки битв, комната джекпота, незакрытые раунды. */
+export async function serverGet<T>(path: string): Promise<T> {
+  const acc = useAccount.getState()
+  return acc.withToken((token) => call<T>(path, { method: 'GET', token })).catch((e) => {
+    throw new Error(e instanceof ApiError ? e.message : 'Сервер не ответил')
+  })
+}

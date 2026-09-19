@@ -89,52 +89,70 @@ export default function Dice({ onBack }: { onBack: () => void }) {
       <Header title="Кости" sub="больше или меньше · RTP 95%" onBack={onBack} right={<BalancePill />} />
       <div className="screen has-action-bar">
         <div className="pad">
-          <div className="dice-box">
-            <div
-              className={'dice-val mono' + (won === true ? ' win' : won === false ? ' lose' : '')}
-            >
-              {value === null ? '—' : value.toFixed(2)}
+          <div className="dc-stage">
+            <div className={'dc-read' + (won === true ? ' win' : won === false ? ' lose' : '')}>
+              <div className="dc-num mono">{value === null ? '—' : value.toFixed(2)}</div>
+              <div className="dc-tag">
+                {won === true ? 'победа' : won === false ? 'мимо' : rolling ? 'бросаем' : `нужно ${over ? 'больше' : 'меньше'} ${target}`}
+              </div>
             </div>
-            <div className="dice-track">
+
+            <div className="dc-track">
               <div
-                className="dice-fill"
-                style={{
-                  left: over ? `${target}%` : 0,
-                  width: over ? `${100 - target}%` : `${target}%`,
-                }}
+                className="dc-zone win"
+                style={{ left: over ? `${target}%` : 0, width: over ? `${100 - target}%` : `${target}%` }}
               />
-              <div className="dice-handle" style={{ left: `${target}%` }} />
+              <div className="dc-ticks">
+                {[25, 50, 75].map((t) => <i key={t} style={{ left: `${t}%` }} />)}
+              </div>
               {value !== null && (
-                <div className="dice-hit" style={{ left: `${Math.min(99.5, value)}%` }} />
+                <div
+                  className={'dc-hit' + (won === true ? ' win' : ' lose')}
+                  style={{ left: `${Math.min(99, Math.max(1, value))}%` }}
+                >
+                  <b className="mono">{value.toFixed(2)}</b>
+                </div>
               )}
+              <div className="dc-handle" style={{ left: `${target}%` }}>
+                <span className="mono">{target}</span>
+              </div>
             </div>
-            <div className="dice-scale mono">
+
+            <div className="dc-scale mono">
               <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
             </div>
           </div>
 
           {history.length > 0 && (
-            <div className="chips" style={{ margin: '12px 0' }}>
+            <div className="dc-history">
               {history.map((h, i) => (
-                <span
-                  key={i}
-                  className="chip mono"
-                  style={{
-                    padding: '5px 10px', fontSize: 12,
-                    color: h.w ? 'var(--green)' : 'var(--red)',
-                  }}
-                >{h.v.toFixed(2)}</span>
+                <span key={i} className={'dc-pill mono' + (h.w ? ' win' : '')}>{h.v.toFixed(2)}</span>
               ))}
             </div>
           )}
 
-          <div className="card" style={{ marginBottom: 14 }}>
-            <div className="chips" style={{ marginBottom: 12 }}>
+          <div className="dc-stats">
+            <div className="stat">
+              <div className="v mono">{(chance * 100).toFixed(1)}%</div>
+              <div className="l">Шанс</div>
+            </div>
+            <div className="stat">
+              <div className="v mono">x{mult.toFixed(2)}</div>
+              <div className="l">Множитель</div>
+            </div>
+            <div className="stat">
+              <div className="v mono" style={{ color: 'var(--green)' }}>+{fmt(payout)}</div>
+              <div className="l">Выигрыш</div>
+            </div>
+          </div>
+
+          <div className="card" style={{ margin: '14px 0' }}>
+            <div className="chips" style={{ marginBottom: 14 }}>
               <button className={'chip' + (!over ? ' on' : '')} onClick={() => setOver(false)}>
-                Меньше {target}
+                ▼ Меньше
               </button>
               <button className={'chip' + (over ? ' on' : '')} onClick={() => setOver(true)}>
-                Больше {target}
+                ▲ Больше
               </button>
             </div>
             <input
@@ -142,17 +160,10 @@ export default function Dice({ onBack }: { onBack: () => void }) {
               value={target}
               onChange={(e) => setTarget(+e.target.value)}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span className="muted">Шанс</span>
-              <b className="mono">{(chance * 100).toFixed(2)}%</b>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span className="muted">Множитель</span>
-              <b className="mono">x{mult.toFixed(3)}</b>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span className="muted">Выигрыш</span>
-              <b className="mono" style={{ color: 'var(--green)' }}>+{fmt(payout)} MX</b>
+            <div className="chips" style={{ marginTop: 10 }}>
+              {[10, 25, 50, 75, 90].map((t) => (
+                <button key={t} className={'chip' + (target === t ? ' on' : '')} onClick={() => setTarget(t)}>{t}</button>
+              ))}
             </div>
           </div>
 
