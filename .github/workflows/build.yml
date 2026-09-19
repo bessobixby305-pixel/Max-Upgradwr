@@ -6,6 +6,12 @@ on:
     tags: ['v*']
   workflow_dispatch:
     inputs:
+      platforms:
+        description: 'Что собирать'
+        type: choice
+        required: false
+        default: 'apk + exe'
+        options: ['apk + exe', 'только apk', 'только exe']
       tag:
         description: 'Тег релиза (например v1.1.0). Пусто — релиз не публикуется.'
         required: false
@@ -17,6 +23,8 @@ permissions:
 jobs:
   android:
     name: Android APK
+    # при запуске вручную можно собрать что-то одно; пуш собирает всё
+    if: inputs.platforms != 'только exe'
     runs-on: ubuntu-latest
     env:
       HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
@@ -95,6 +103,7 @@ jobs:
 
   windows:
     name: Windows EXE
+    if: inputs.platforms != 'только apk'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -127,7 +136,12 @@ jobs:
   release:
     name: Publish release
     needs: [android, windows]
-    if: startsWith(github.ref, 'refs/tags/v') || inputs.tag != ''
+    # пропущенная платформа не должна мешать релизу того, что собралось
+    if: |
+      always()
+      && (startsWith(github.ref, 'refs/tags/v') || inputs.tag != '')
+      && !contains(needs.*.result, 'failure')
+      && !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
