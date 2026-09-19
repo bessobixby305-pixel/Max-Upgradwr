@@ -15,7 +15,7 @@ import {
   minesField, minesMult, playCase, playContract, playDice, playDouble,
   playSlots, playUpgrade, playWheel, rngFor, towerMult, towerRows,
 } from '../src/core/games.js'
-import { CASES, caseRtp } from '../src/core/cases.js'
+import { CASES, caseRtp, pickDrop } from '../src/core/cases.js'
 import { ITEM_BY_ID, sortedByPrice } from '../src/core/items.js'
 import { slotsRtp } from '../src/core/slots.js'
 import { WHEEL_SECTORS } from '../src/core/economy.js'
@@ -172,6 +172,62 @@ for (const [bombs, floors] of [[1, 3], [1, 8], [2, 2]] as const) {
 {
   const rows = towerRows(rngFor('a', 'b', 1), 2)
   check('на этаже остаётся одна безопасная клетка', rows.every((r) => r.length === 1))
+}
+
+console.log('\nБИТВА КЕЙСОВ')
+{
+  // Шанс победы у каждого места должен быть ровно 1/N — все тянут из
+  // одного распределения. Отсюда и вывод, что боты на отдачу не влияют.
+  for (const seats of [2, 4]) {
+    const next = chain()
+    const runs = 60_000
+    const rounds = 3
+    let myWins = 0
+    let myPay = 0
+    const box = CASES[1]
+    for (let i = 0; i < runs; i++) {
+      const rng = next()
+      const totals: number[] = []
+      for (let s = 0; s < seats; s++) {
+        let t = 0
+        for (let r = 0; r < rounds; r++) t += pickDrop(box, rng.roll(s * 100 + r)).price
+        totals.push(t)
+      }
+      const pot = totals.reduce((a, b) => a + b, 0)
+      const best = Math.max(...totals)
+      const tied = totals.map((t, k) => (t === best ? k : -1)).filter((k) => k >= 0)
+      const winner = tied.length > 1 ? tied[Math.floor(rng.roll(9999) * tied.length)] : tied[0]
+      if (winner === 0) { myWins++; myPay += pot }
+    }
+    const cost = box.price * rounds
+    check(
+      `${seats} места: шанс победы близок к 1/${seats}`,
+      Math.abs(myWins / runs - 1 / seats) < 4 * Math.sqrt((1 / seats) * (1 - 1 / seats) / runs),
+      pct(myWins / runs),
+    )
+    const rtp = myPay / (runs * cost)
+    check(`${seats} места: отдача равна RTP кейса`, Math.abs(rtp - caseRtp(box)) < 0.03, `${pct(rtp)} против ${pct(caseRtp(box))}`)
+  }
+}
+
+console.log('\nДЖЕКПОТ')
+{
+  // Победитель выбирается пропорционально ставке, поэтому отдача равна
+  // ставке за вычетом комиссии — сколько бы ни поставили боты.
+  const RAKE = 0.08
+  const next = chain()
+  const runs = 200_000
+  const myBet = 1000
+  let paid = 0
+  for (let i = 0; i < runs; i++) {
+    const rng = next()
+    // соперники ставят случайно, как это делает сервер при добивании
+    const others = [0, 1, 2].map((k) => Math.max(10, Math.round(myBet * (0.3 + rng.roll(50 + k) * 2.2))))
+    const pot = myBet + others.reduce((a, b) => a + b, 0)
+    if (rng.roll() < myBet / pot) paid += Math.round(pot * (1 - RAKE))
+  }
+  const rtp = paid / (runs * myBet)
+  check('отдача равна ставке минус комиссия', Math.abs(rtp - (1 - RAKE)) < 0.02, `${pct(rtp)} против ${pct(1 - RAKE)}`)
 }
 
 console.log('\nКРАШ')

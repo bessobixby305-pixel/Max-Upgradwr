@@ -3,7 +3,9 @@
  *  параметрами запроса нельзя. */
 import { spawn } from 'node:child_process'
 
-const BASE = 'http://127.0.0.1:3112'
+// порт случайный: так прогон никогда не попадёт на чужой сервер
+const PORT = String(20000 + Math.floor(Math.random() * 20000))
+const BASE = `http://127.0.0.1:${PORT}`
 let failures = 0
 const check = (label: string, cond: boolean, extra = '') => {
   if (!cond) failures++
@@ -11,7 +13,7 @@ const check = (label: string, cond: boolean, extra = '') => {
 }
 
 const srv = spawn('npx', ['tsx', 'src/index.ts'], {
-  env: { ...process.env, PORT: '3112', LOG_LEVEL: 'silent' },
+  env: { ...process.env, PORT, LOG_LEVEL: 'silent' },
   stdio: ['ignore', 'pipe', 'pipe'],
 })
 srv.stderr.on('data', (d) => { const s = String(d); if (s.includes('Error')) console.error(s) })

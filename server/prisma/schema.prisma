@@ -29,6 +29,8 @@ model User {
   promoUses PromoUse[]
   sessions  Session[]
   live      LiveRound[]
+  battles   BattlePlayer[]
+  jackpots  JackpotEntry[]
 
   @@index([lastSeenAt])
 }
@@ -153,6 +155,92 @@ model LiveRound {
   endedAt   DateTime?
 
   @@index([userId, endedAt])
+}
+
+/// Битва кейсов между игроками. Ботами добиваются пустые места:
+/// шанс победы у каждого ровно 1/N, поэтому отдача от их числа не зависит.
+model Battle {
+  id     String @id @default(cuid())
+  caseId String
+  rounds Int
+  seats  Int
+  bet    BigInt
+  /// open — ждём игроков, done — сыграна
+  status String @default("open")
+
+  /// сид битвы: хэш виден сразу, сам сид раскрывается после боя
+  serverSeed     String
+  serverSeedHash String
+
+  createdById String
+  createdAt   DateTime  @default(now())
+  endedAt     DateTime?
+  /// место победителя; null пока битва не сыграна
+  winnerSeat  Int?
+
+  players BattlePlayer[]
+
+  @@index([status, createdAt])
+}
+
+model BattlePlayer {
+  id       String   @id @default(cuid())
+  battleId String
+  battle   Battle   @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  /// null — бот
+  userId   String?
+  user     User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name     String
+  emo      String
+  seat     Int
+  /// выпавшие предметы по раундам
+  drops    String[] @default([])
+  total    BigInt   @default(0)
+
+  @@unique([battleId, seat])
+  @@index([userId])
+}
+
+/// Джекпот: общий банк, победитель выбирается пропорционально ставке.
+/// Комиссия и делает игру честной при добивании ботами.
+model Jackpot {
+  id     String @id @default(cuid())
+  status String @default("open")
+
+  serverSeed     String
+  serverSeedHash String
+
+  pot         BigInt    @default(0)
+  /// момент розыгрыша; ставится, когда в комнате появляется первый игрок
+  closesAt    DateTime?
+  createdAt   DateTime  @default(now())
+  endedAt     DateTime?
+  winnerId    String?
+  winnerName  String?
+  /// доля победителя в банке на момент розыгрыша
+  winnerShare Float?
+  roll        Float?
+
+  entries JackpotEntry[]
+
+  @@index([status, createdAt])
+}
+
+model JackpotEntry {
+  id        String  @id @default(cuid())
+  jackpotId String
+  jackpot   Jackpot @relation(fields: [jackpotId], references: [id], onDelete: Cascade)
+  /// null — бот
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  emo       String
+  bet       BigInt
+
+  createdAt DateTime @default(now())
+
+  @@index([jackpotId])
+  @@index([userId])
 }
 
 /// Сессии: refresh-токен хранится хэшем, access живёт недолго и в базу не пишется.
