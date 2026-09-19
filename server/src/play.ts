@@ -199,61 +199,79 @@ export function playRoutes(app: FastifyInstance, secret: string) {
     return { amount: RESCUE_AMOUNT, balance: n(profile.balance) }
   })
 
-  // ——— промокоды: статические коды из общего ядра, учёт активаций в базе
+  // ——— промокоды: статические коды из ядра плюс выпущенные из админки
   route('/promo', z.object({ code: z.string().trim().min(1).max(40) }), async (userId, b) => {
     const code = b.code.toUpperCase()
-    const def = PROMOS[code]
-    if (!def) throw new PlayError('Неверный код')
+    const stat = PROMOS[code]
 
-    const promo = await db.promo.upsert({
-      where: { code },
-      update: {},
-      create: {
-        code,
-        amount: BigInt(def.amount ?? 0),
-        items: def.items ?? [],
-        note: def.label,
-      },
-    })
-    if (promo.revokedAt) throw new PlayError('Код больше не действует')
-
-    try {
-      await db.promoUse.create({ data: { promoId: promo.id, userId } })
-    } catch {
-      // уникальный индекс не дал активировать код дважды
-      throw new PlayError('Код уже использован')
+    // код из админки имеет приоритет: у него свои лимиты и срок
+    let promo = await db.promo.findUnique({ where: { code } })
+    if (!promo) {
+      if (!stat) throw new PlayError('Неверный код')
+      promo = await db.promo.create({
+        data: {
+          code,
+          amount: BigInt(stat.amount ?? 0),
+          items: stat.items ?? [],
+          note: stat.label,
+        },
+      })
     }
 
-    const items = def.items ?? []
-    const [profile] = await db.$transaction([
-      db.profile.update({
-        where: { userId },
-        data: { balance: { increment: BigInt(def.amount ?? 0) } },
-      }),
-      db.promo.update({ where: { id: promo.id }, data: { usedCount: { increment: 1 } } }),
-      ...(items.length
-        ? [db.item.createMany({
-            data: items.map((id) => ({
-              userId, itemId: id, price: ITEM_BY_ID[id]?.price ?? 0, source: `promo:${code}`,
-            })),
-          })]
-        : []),
-    ])
+    if (promo.revokedAt) throw new PlayError('Код больше не действует')
+    if (promo.expiresAt && promo.expiresAt.getTime() < Date.now()) throw new PlayError('Срок кода истёк')
+    if (promo.maxUses !== null && promo.usedCount >= promo.maxUses) {
+      throw new PlayError('Код исчерпан')
+    }
+
+    if (promo.perUserOnce) {
+      try {
+        await db.promoUse.create({ data: { promoId: promo.id, userId } })
+      } catch {
+        // уникальный индекс не дал активировать код дважды
+        throw new PlayError('Код уже использован')
+      }
+    } else {
+      await db.promoUse.create({ data: { promoId: promo.id, userId } })
+    }
+
+    // счётчик растёт под условием, чтобы лимит не пробили параллельные запросы
+    const bumped = await db.promo.updateMany({
+      where: {
+        id: promo.id,
+        ...(promo.maxUses !== null ? { usedCount: { lt: promo.maxUses } } : {}),
+      },
+      data: { usedCount: { increment: 1 } },
+    })
+    if (bumped.count !== 1) {
+      await db.promoUse.deleteMany({ where: { promoId: promo.id, userId } })
+      throw new PlayError('Код исчерпан')
+    }
+
+    const items = promo.items
+    const amount = n(promo.amount)
+    const profile = await db.profile.update({
+      where: { userId },
+      data: { balance: { increment: BigInt(amount) } },
+    })
     if (profile.balance > profile.maxBalance) {
       await db.profile.update({ where: { userId }, data: { maxBalance: profile.balance } })
     }
 
-    const created = items.length
-      ? await db.item.findMany({
-          where: { userId, source: `promo:${code}` },
-          orderBy: { acquiredAt: 'desc' },
-          take: items.length,
-        })
-      : []
+    let created: { id: string; itemId: string; price: number }[] = []
+    if (items.length) {
+      created = await db.$transaction(
+        items.map((id) =>
+          db.item.create({
+            data: { userId, itemId: id, price: ITEM_BY_ID[id]?.price ?? 0, source: `promo:${code}` },
+          }),
+        ),
+      )
+    }
 
     return {
-      label: def.label,
-      amount: def.amount ?? 0,
+      label: promo.note ?? code,
+      amount,
       balance: n(profile.balance),
       items: created.map((i) => ({ uid: i.id, id: i.itemId, price: i.price })),
     }

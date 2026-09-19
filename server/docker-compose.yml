@@ -23,6 +23,7 @@ services:
     environment:
       DATABASE_URL: postgresql://maxup:${DB_PASSWORD}@db:5432/maxupgrader
       JWT_SECRET: ${JWT_SECRET:?нужен JWT_SECRET}
+      ADMIN_CODE: ${ADMIN_CODE:-}
       PORT: 3000
     expose:
       - "3000"

@@ -76,7 +76,7 @@ export default function Profile({ go, onBack }: { go: (r: Route) => void; onBack
               <span className="t">Честная игра</span>
               <span className="r">раундов: {g.fair.nonce}</span>
             </button>
-            {g.admin && (
+            {(g.admin || acc.role === 'ADMIN') && (
               <button className="row" onClick={() => go({ s: 'admin' })}>
                 <Icon name="shield" size={20} className="row-ico" style={{ color: 'var(--accent)' }} />
                 <span className="t" style={{ color: 'var(--accent)' }}>Админ-панель</span>

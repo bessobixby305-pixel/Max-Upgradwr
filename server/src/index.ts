@@ -8,6 +8,7 @@ import { profileRoutes } from './profile.js'
 import { playRoutes } from './play.js'
 import { liveRoutes } from './live.js'
 import { versusRoutes } from './versus.js'
+import { adminRoutes } from './admin.js'
 
 const SECRET = process.env.JWT_SECRET
 if (!SECRET || SECRET.length < 16) {
@@ -38,6 +39,7 @@ profileRoutes(app, SECRET)
 playRoutes(app, SECRET)
 liveRoutes(app, SECRET)
 versusRoutes(app, SECRET)
+adminRoutes(app, SECRET)
 
 const port = Number(process.env.PORT ?? 3000)
 await app.listen({ port, host: '0.0.0.0' })

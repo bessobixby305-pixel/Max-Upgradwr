@@ -57,7 +57,7 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "API_DOMAIN='${{ secrets.API_DOMAIN }}' bash -s" <<'REMOTE'
+            "API_DOMAIN='${{ secrets.API_DOMAIN }}' ADMIN_CODE='${{ secrets.ADMIN_CODE }}' bash -s" <<'REMOTE'
           set -e
           cd ~/max-upgrader-server
           # секреты живут только на сервере, в репозиторий не попадают
@@ -65,9 +65,10 @@ jobs:
             echo "DB_PASSWORD=$(openssl rand -hex 24)" > .env
             echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
           fi
-          # домен приходит из секрета репозитория и перезаписывается на каждом деплое
-          grep -v -e '^API_DOMAIN=' .env > .env.next || true
+          # домен и админ-код приходят из секретов и переписываются на каждом деплое
+          grep -v -e '^API_DOMAIN=' -e '^ADMIN_CODE=' .env > .env.next || true
           echo "API_DOMAIN=${API_DOMAIN}" >> .env.next
+          echo "ADMIN_CODE=${ADMIN_CODE}" >> .env.next
           # страховка: не подменяем .env, если пропали сгенерированные секреты
           if grep -q '^DB_PASSWORD=' .env.next && grep -q '^JWT_SECRET=' .env.next; then
             mv .env.next .env

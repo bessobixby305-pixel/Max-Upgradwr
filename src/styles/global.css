@@ -1244,3 +1244,19 @@ html[data-theme='light'] .win-card { background: color-mix(in srgb, #fff 78%, tr
 }
 
 .dc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
+
+/* Панель вкладок под плавающей шапкой: иначе при прокрутке она
+   уезжает под неё и навигация пропадает из виду. */
+.tabs-sticky {
+  position: sticky;
+  top: calc(var(--safe-top) + 74px);
+  z-index: 15;
+  margin: 0 -16px 14px;
+  padding: 10px 16px;
+  background: var(--chrome);
+  backdrop-filter: saturate(180%) blur(28px);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  border-bottom: 1px solid var(--line);
+}
+.tabs-sticky .chips { margin: 0; }
+.tabs-sticky .chips + .chips { margin-top: 8px; }

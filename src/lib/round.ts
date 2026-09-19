@@ -8,6 +8,7 @@ import { Outcome, Rng, rngFor } from '../core/games'
 import { ITEM_BY_ID } from '../core/items'
 import { ResultKind, Stats, useGame } from '../store/game'
 import { useAccount } from '../store/account'
+import { ADMIN_UNLOCK, readCode } from '../core/admincode'
 import { ApiError, apiConfigured, call } from './api'
 
 export interface RoundResult {
@@ -130,14 +131,23 @@ export async function sellItems(uids: string[]) {
 }
 
 /** Активировать промокод. */
-export async function redeemCode(code: string): Promise<{ ok: boolean; msg: string }> {
+export async function redeemCode(raw: string): Promise<{ ok: boolean; msg: string }> {
   const g = useGame.getState()
+  const code = raw.trim().toUpperCase()
+
+  // код разблокировки панели относится к устройству, а не к аккаунту
+  if (code === ADMIN_UNLOCK) return g.redeemPromo(code)
   if (!onlineMode()) return g.redeemPromo(code)
+
+  // оффлайновые подписанные коды начислили бы деньги мимо сервера
+  if (readCode(code)) {
+    return { ok: false, msg: 'С аккаунтом такие коды не работают — попроси обычный промокод' }
+  }
   try {
     const r = await serverCall<{
       label: string; amount: number; balance: number
       items: { uid: string; id: string; price: number }[]
-    }>('/promo', { code: code.trim().toUpperCase() })
+    }>('/promo', { code })
     g.setServerState({ balance: r.balance, xp: g.xp })
     for (const it of r.items) g.putItem(it)
     return {

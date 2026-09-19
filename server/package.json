@@ -11,7 +11,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "test": "tsx test/rtp.ts && tsx test/run.ts && tsx test/play.ts && tsx test/versus.ts",
+    "test": "tsx test/rtp.ts && tsx test/run.ts && tsx test/play.ts && tsx test/versus.ts && tsx test/admin.ts",
     "test:rtp": "tsx test/rtp.ts"
   },
   "dependencies": {
