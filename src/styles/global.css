@@ -1246,14 +1246,16 @@ html[data-theme='light'] .win-card { background: color-mix(in srgb, #fff 78%, tr
 .dc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 4px; }
 
 /* Панель вкладок под плавающей шапкой: иначе при прокрутке она
-   уезжает под неё и навигация пропадает из виду. */
+   уезжает под неё и навигация пропадает из виду. Отступ берётся из
+   реальной высоты шапки — зашитое число врало на экранах с вырезом. */
 .tabs-sticky {
   position: sticky;
-  top: calc(var(--safe-top) + 74px);
+  top: calc(var(--safe-top) + var(--hdr-h, 64px) + 14px);
   z-index: 15;
   margin: 0 -16px 14px;
   padding: 10px 16px;
-  background: var(--chrome);
+  /* плотный фон: сквозь полупрозрачный просвечивал список под ним */
+  background: var(--chrome-solid);
   backdrop-filter: saturate(180%) blur(28px);
   -webkit-backdrop-filter: saturate(180%) blur(28px);
   border-bottom: 1px solid var(--line);

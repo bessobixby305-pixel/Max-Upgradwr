@@ -47,11 +47,11 @@ const ago = (ts: number) => {
   return `${Math.floor(h / 24)} дн назад`
 }
 
-type Tab = 'stats' | 'users' | 'promos' | 'log'
+export type AdminTab = 'stats' | 'users' | 'promos' | 'log'
 
-export default function ServerAdmin() {
+/** Вкладки рисует родитель — они живут в общей липкой панели. */
+export default function ServerAdmin({ tab }: { tab: AdminTab }) {
   const toast = useGame((s) => s.toast)
-  const [tab, setTab] = useState<Tab>('stats')
   const [stats, setStats] = useState<Stats | null>(null)
   const [users, setUsers] = useState<Player[]>([])
   const [promos, setPromos] = useState<Promo[]>([])
@@ -103,18 +103,6 @@ export default function ServerAdmin() {
 
   return (
     <>
-      <div className="tabs-sticky" style={{ top: 'calc(var(--safe-top) + 132px)' }}>
-        <div className="chips">
-          {([['stats', 'Сводка'], ['users', 'Игроки'], ['promos', 'Коды'], ['log', 'Журнал']] as const).map(
-            ([id, label]) => (
-              <button key={id} className={'chip' + (tab === id ? ' on' : '')} onClick={() => setTab(id)}>
-                {label}
-              </button>
-            ),
-          )}
-        </div>
-      </div>
-
       {/* ——————————————————————————————— сводка */}
       {tab === 'stats' && (stats ? (
         <>

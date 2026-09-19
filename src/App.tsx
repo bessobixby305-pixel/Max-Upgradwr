@@ -86,6 +86,19 @@ export default function App() {
 
   useEffect(() => { useGame.getState().checkAchievements() }, [])
 
+  // Прокручиваться должен только .screen. Браузер иногда сдвигает сам .app,
+  // когда показывает клавиатуру под фокусом, и тогда на следующем экране
+  // верх контента уезжает под плавающую шапку. Возвращаем на место.
+  const appRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = appRef.current
+    if (!el) return
+    const snap = () => { if (el.scrollTop !== 0 || el.scrollLeft !== 0) el.scrollTo(0, 0) }
+    el.addEventListener('scroll', snap, { passive: true })
+    return () => el.removeEventListener('scroll', snap)
+  }, [])
+  useEffect(() => { appRef.current?.scrollTo(0, 0) }, [tab, stack.length])
+
   // вход уже был — забираем свежий баланс и инвентарь из облака
   useEffect(() => {
     if (useAccount.getState().access) void useAccount.getState().loadMe()
@@ -113,13 +126,13 @@ export default function App() {
       case 'slots': return <Slots onBack={pop} />
       case 'jackpot': return <Jackpot onBack={pop} />
       case 'profile': return <Profile go={push} onBack={pop} />
-      case 'admin': return <Admin onBack={pop} />
+      case 'admin': return <Admin onBack={pop} go={push} />
       case 'account': return <Account onBack={pop} />
     }
   }
 
   return (
-    <div className="app">
+    <div className="app" ref={appRef}>
       {top ? renderStack() : (
         <>
           {tab === 'home' && (

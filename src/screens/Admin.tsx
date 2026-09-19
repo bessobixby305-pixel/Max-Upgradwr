@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react'
 import { BalancePill, Header } from '../components/ui'
+import Icon from '../components/Icon'
 import { useGame } from '../store/game'
 import { useAccount } from '../store/account'
 import { onlineMode, serverCall, serverGet } from '../lib/round'
-import ServerAdmin from './admin/Server'
+import ServerAdmin, { AdminTab } from './admin/Server'
 import DeviceAdmin from './admin/Device'
 
-/** Админка: серверная часть для живой экономики и оффлайновая для устройства. */
-export default function Admin({ onBack }: { onBack: () => void }) {
+/** Админка. Вход только с аккаунтом и только по серверному коду:
+ *  без этого панель не показывает ни одного инструмента. */
+export default function Admin({ onBack, go }: { onBack: () => void; go: (r: { s: 'account' }) => void }) {
   const g = useGame()
   const acc = useAccount()
   const online = onlineMode()
-  const [mode, setMode] = useState<'server' | 'device'>(online ? 'server' : 'device')
+  const [mode, setMode] = useState<'server' | 'device'>('server')
+  const [tab, setTab] = useState<AdminTab>('stats')
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
   const [configured, setConfigured] = useState(true)
   const [code, setCode] = useState('')
@@ -41,40 +44,50 @@ export default function Admin({ onBack }: { onBack: () => void }) {
     }
   }
 
-  return (
-    <>
-      <Header
-        title="Админ-панель"
-        sub={mode === 'server' ? 'сервер и живая экономика' : 'только это устройство'}
-        onBack={onBack}
-        right={<BalancePill />}
-      />
-      <div className="screen">
-        <div className="pad">
-          {online && (
-            <div className="tabs-sticky">
-              <div className="chips">
-                <button className={'chip' + (mode === 'server' ? ' on' : '')} onClick={() => setMode('server')}>
-                  Сервер
-                </button>
-                <button className={'chip' + (mode === 'device' ? ' on' : '')} onClick={() => setMode('device')}>
-                  Устройство
-                </button>
-              </div>
-            </div>
-          )}
+  const header = (sub: string) => (
+    <Header title="Админ-панель" sub={sub} onBack={onBack} right={<BalancePill />} />
+  )
 
-          {mode === 'server' && (
-            isAdmin === null ? (
+  // ——— без аккаунта панель не открывается вовсе
+  if (!online) {
+    return (
+      <>
+        {header('нужен вход')}
+        <div className="screen">
+          <div className="pad">
+            <div className="card center">
+              <Icon name="shield" size={34} style={{ color: 'var(--text-3)' }} />
+              <div style={{ fontWeight: 800, fontSize: 17, margin: '10px 0 6px' }}>Нужен вход в аккаунт</div>
+              <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+                Админка управляет живой экономикой на сервере, поэтому работает
+                только с аккаунтом. Войди или зарегистрируйся, потом вернись сюда
+                и введи админ-код.
+              </p>
+              <button className="btn" style={{ marginTop: 14 }} onClick={() => go({ s: 'account' })}>
+                Перейти к аккаунту
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  // ——— вход есть, но прав ещё нет: только форма кода
+  if (isAdmin !== true) {
+    return (
+      <>
+        {header('нужен админ-код')}
+        <div className="screen">
+          <div className="pad">
+            {isAdmin === null ? (
               <div className="card center muted">Проверяем права…</div>
-            ) : isAdmin ? (
-              <ServerAdmin />
             ) : (
               <div className="card">
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>Нужны права администратора</div>
+                <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 8 }}>Нужны права администратора</div>
                 <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
                   {configured
-                    ? 'Введи админ-код — он задан на сервере и в приложение не зашит. Права выдаются твоему аккаунту навсегда.'
+                    ? 'Введи админ-код. Он задан на сервере и в приложение не зашит, поэтому вытащить его из файла нельзя. Права выдаются твоему аккаунту навсегда.'
                     : 'На сервере не задан админ-код. Добавь секрет ADMIN_CODE в репозиторий и перезапусти деплой.'}
                 </p>
                 {configured && (
@@ -97,10 +110,44 @@ export default function Admin({ onBack }: { onBack: () => void }) {
                   </>
                 )}
               </div>
-            )
-          )}
+            )}
+          </div>
+        </div>
+      </>
+    )
+  }
 
-          {mode === 'device' && <DeviceAdmin onBack={onBack} />}
+  // ——— полноценная панель
+  return (
+    <>
+      {header(mode === 'server' ? 'сервер и живая экономика' : 'только это устройство')}
+      <div className="screen">
+        <div className="pad">
+          {/* обе строки вкладок в одном липком блоке: два вложенных
+              липких элемента разъезжались и прятали верхний под шапкой */}
+          <div className="tabs-sticky">
+            <div className="chips">
+              <button className={'chip' + (mode === 'server' ? ' on' : '')} onClick={() => setMode('server')}>
+                Сервер
+              </button>
+              <button className={'chip' + (mode === 'device' ? ' on' : '')} onClick={() => setMode('device')}>
+                Устройство
+              </button>
+            </div>
+            {mode === 'server' && (
+              <div className="chips">
+                {([['stats', 'Сводка'], ['users', 'Игроки'], ['promos', 'Коды'], ['log', 'Журнал']] as const).map(
+                  ([id, label]) => (
+                    <button key={id} className={'chip' + (tab === id ? ' on' : '')} onClick={() => setTab(id)}>
+                      {label}
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
+
+          {mode === 'server' ? <ServerAdmin tab={tab} /> : <DeviceAdmin onBack={onBack} />}
         </div>
       </div>
     </>

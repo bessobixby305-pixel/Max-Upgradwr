@@ -9,8 +9,21 @@ export function Header({
 }: {
   title: string; sub?: string; onBack?: () => void; right?: React.ReactNode
 }) {
+  // высота шапки нужна липким панелям под ней: она разная от экрана к экрану
+  // и зависит от выреза, поэтому её нельзя зашивать числом
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const apply = () => document.documentElement.style.setProperty('--hdr-h', `${el.offsetHeight}px`)
+    apply()
+    const ro = new ResizeObserver(apply)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
   return (
-    <div className="hdr">
+    <div className="hdr" ref={ref}>
       {onBack && (
         <button className="back-btn" onClick={onBack} aria-label="Назад">
           <Icon name="back" size={22} />
