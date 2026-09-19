@@ -135,7 +135,7 @@ export default function Profile({ go, onBack }: { go: (r: Route) => void; onBack
           </div>
 
           <p className="muted center" style={{ fontSize: 11.5, padding: '22px 10px 0', lineHeight: 1.6 }}>
-            MAX Upgrader v2.0 · игра на виртуальную валюту MX.<br />
+            MAX Upgrader v2.0.1 · игра на виртуальную валюту MX.<br />
             Реальных денег, покупок и вывода средств нет.
           </p>
         </div>
