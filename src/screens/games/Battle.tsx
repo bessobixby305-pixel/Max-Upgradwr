@@ -4,6 +4,7 @@ import { CASES, CaseDef, pickDrop } from '../../core/cases'
 import { ItemDef, RARITY_COLOR, rarityOf } from '../../core/items'
 import { fmt } from '../../core/economy'
 import { useGame } from '../../store/game'
+import { onlineMode } from '../../lib/round'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
 const BOT_NAMES = ['Артём_max', 'Ника228', 'Тимур_pro', 'Соня🍀', 'Денис_off', 'Влад ЪУЪ']
@@ -25,6 +26,12 @@ export default function Battle({ onBack }: { onBack: () => void }) {
 
   async function start() {
     if (busy) return
+    // экономика живёт на сервере, а эти два режима туда ещё не переехали —
+    // считать их локально значит рисовать себе деньги, которых нет
+    if (onlineMode()) {
+      g.toast('С аккаунтом этот режим пока недоступен: переносим на сервер')
+      return
+    }
     if (!g.bet(cost)) { g.toast('Недостаточно MX'); return }
     setWinner(null)
     setBusy(true)

@@ -1,17 +1,15 @@
 import { useRef, useState } from 'react'
 import { BalancePill, BetInput, Header } from '../../components/ui'
 import { fmt } from '../../core/economy'
+import { DOUBLE_MULT, DOUBLE_SLOTS, DoubleColor, playDouble } from '../../core/games'
 import { useGame } from '../../store/game'
+import { playInstant } from '../../lib/round'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
-type Color = 'red' | 'black' | 'green'
+type Color = DoubleColor
 
-/** 15 слотов: 7 красных, 7 чёрных, 1 зелёный. RTP = 14/15 ≈ 93.3%. */
-const SLOTS: Color[] = [
-  'green', 'red', 'black', 'red', 'black', 'red', 'black', 'red',
-  'black', 'red', 'black', 'red', 'black', 'red', 'black',
-]
-const MULT: Record<Color, number> = { red: 2, black: 2, green: 14 }
+const SLOTS = DOUBLE_SLOTS
+const MULT = DOUBLE_MULT
 const LABEL: Record<Color, string> = { red: 'Красное', black: 'Чёрное', green: 'Зелёное' }
 const TINT: Record<Color, string> = {
   red: '#D94437',
@@ -42,14 +40,24 @@ export default function Double({ onBack }: { onBack: () => void }) {
 
   async function spin() {
     if (rolling) return
-    if (!g.bet(bet)) { g.toast('Недостаточно MX'); return }
     setLanded(null)
     setRolling(true)
     sfx.click()
 
-    const { roll } = g.nextRoll()
-    const idx = Math.min(SLOTS.length - 1, Math.floor(roll * SLOTS.length))
-    const color = SLOTS[idx]
+    let res
+    try {
+      res = await playInstant({
+        kind: 'double', bet,
+        path: '/play/double', body: { bet, pick },
+        local: (rng) => playDouble(rng, { bet, pick }),
+        bump: (o) => (o.detail.color === 'green' ? { doubleGreens: g.stats.doubleGreens + 1 } : {}),
+      })
+    } catch (e) {
+      setRolling(false)
+      g.toast((e as Error).message)
+      return
+    }
+    const color = res.outcome.detail.color as Color
 
     const s: Color[] = []
     for (let i = 0; i < STRIP; i++) {
@@ -77,25 +85,20 @@ export default function Double({ onBack }: { onBack: () => void }) {
     }
     await wait(dur + 140)
 
-    const won = color === pick
-    const payout = won ? Math.round(bet * MULT[color]) : 0
+    const won = res.outcome.win
+    const payout = res.outcome.payout
     if (won) {
-      g.win(payout)
-      g.bumpStats({ wins: g.stats.wins + 1 })
       confetti(hostRef.current, color === 'green' ? 150 : 70)
       color === 'green' ? sfx.bigWin() : sfx.win()
       haptic([0, 40, 60, 40])
     } else {
-      g.bumpStats({ losses: g.stats.losses + 1 })
       sfx.lose()
       haptic(130)
     }
-    if (color === 'green') g.bumpStats({ doubleGreens: g.stats.doubleGreens + 1 })
 
     setLanded(color)
     setHistory((h) => [color, ...h].slice(0, 14))
     setRolling(false)
-    g.logRound({ kind: 'double', roll, chance: pick === 'green' ? 1 / 15 : 7 / 15, win: won, payout })
     g.pushResult({
       kind: 'double',
       title: `Дабл · ${LABEL[color]}`,
@@ -103,7 +106,6 @@ export default function Double({ onBack }: { onBack: () => void }) {
       mult: won ? MULT[color] : undefined,
       extra: `ставка на ${LABEL[pick].toLowerCase()}`,
     })
-    g.checkAchievements()
   }
 
   return (

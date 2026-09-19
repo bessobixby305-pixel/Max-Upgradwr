@@ -1,18 +1,13 @@
 import { useRef, useState } from 'react'
 import { BalancePill, BetInput, Header } from '../../components/ui'
 import { fmt } from '../../core/economy'
-import { seededShuffle } from '../../core/fair'
+import { TOWER_FLOORS, towerMult, towerRows } from '../../core/games'
 import { useGame } from '../../store/game'
+import { applyServerRound, localRng, onlineMode, serverCall } from '../../lib/round'
 import { confetti, haptic, sfx } from '../../lib/fx'
 
-const FLOORS = 8
-const COLS = 3
-const RTP = 0.97
-
-/** Множитель после n пройденных этажей при заданном числе мин в ряду. */
-function multFor(bombs: number, floors: number) {
-  return floors === 0 ? 1 : RTP * Math.pow(COLS / (COLS - bombs), floors)
-}
+const FLOORS = TOWER_FLOORS
+const multFor = towerMult
 
 export default function Tower({ onBack }: { onBack: () => void }) {
   const g = useGame()
@@ -23,6 +18,7 @@ export default function Tower({ onBack }: { onBack: () => void }) {
   const [picked, setPicked] = useState<number[]>([])
   const [playing, setPlaying] = useState(false)
   const [dead, setDead] = useState(false)
+  const [busy, setBusy] = useState(false)
   const hostRef = useRef<HTMLDivElement>(null)
 
   const floor = picked.length
@@ -31,49 +27,87 @@ export default function Tower({ onBack }: { onBack: () => void }) {
   const cashout = Math.round(bet * mult)
   const maxBet = Math.max(1, Math.floor(g.balance))
 
-  function start() {
-    if (!g.bet(bet)) { g.toast('Недостаточно MX'); return }
-    const { roll, nonce } = g.nextRoll()
-    const rows: number[][] = []
-    for (let f = 0; f < FLOORS; f++) {
-      const order = seededShuffle([0, 1, 2], g.fair.serverSeed, g.fair.clientSeed, nonce + f)
-      rows.push(order.slice(bombs)) // остальные — безопасные
+  async function start() {
+    if (busy || playing) return
+    setBusy(true)
+    try {
+      if (onlineMode()) {
+        // безопасные клетки знает только сервер
+        const r = await serverCall<{ balance: number }>('/play/tower/start', { bet, bombs })
+        g.setServerState({ balance: r.balance, xp: g.xp })
+        setSafe([])
+      } else {
+        if (!g.bet(bet)) throw new Error('Недостаточно MX')
+        setSafe(towerRows(localRng(), bombs))
+      }
+      setPicked([])
+      setPlaying(true)
+      setDead(false)
+      sfx.click()
+    } catch (e) {
+      g.toast((e as Error).message)
+    } finally {
+      setBusy(false)
     }
-    setSafe(rows)
-    setPicked([])
-    setPlaying(true)
-    setDead(false)
-    sfx.click()
-    g.logRound({ kind: 'tower', roll, win: false, payout: 0 })
   }
 
-  function pickCell(col: number) {
-    if (!playing) return
+  function fell(col: number, f: number) {
+    setPicked((p) => [...p, col])
+    setPlaying(false)
+    setDead(true)
+    sfx.boom()
+    haptic([0, 90, 70, 140])
+    g.pushResult({
+      kind: 'tower', title: `Башня · ${bombs} мин в ряду`, bet, payout: 0,
+      extra: `этажей пройдено: ${f}`,
+    })
+  }
+
+  async function pickCell(col: number) {
+    if (!playing || busy) return
     const f = picked.length
+
+    if (onlineMode()) {
+      setBusy(true)
+      try {
+        const r = await serverCall<any>('/play/tower/pick', { col })
+        if (r.dead) {
+          setSafe(r.rows)
+          applyServerRound(r)
+          fell(col, f)
+        } else if (r.payout !== undefined) {
+          // башня пройдена до верха — сервер закрыл раунд сам
+          setPicked(r.picked)
+          applyServerRound(r)
+          cashedOut(r.picked.length, r.payout)
+        } else {
+          setSafe((rows) => { const n = [...rows]; n[f] = r.safe; return n })
+          setPicked(r.picked)
+          sfx.coin()
+          haptic(8)
+        }
+      } catch (e) {
+        g.toast((e as Error).message)
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+
     if (!safe[f].includes(col)) {
-      setPicked([...picked, col])
-      setPlaying(false)
-      setDead(true)
-      sfx.boom()
-      haptic([0, 90, 70, 140])
-      g.bumpStats({ losses: g.stats.losses + 1 })
-      g.pushResult({
-        kind: 'tower', title: `Башня · ${bombs} мин в ряду`, bet, payout: 0,
-        extra: `этажей пройдено: ${f}`,
-      })
+      g.bumpStats({ spins: g.stats.spins + 1, losses: g.stats.losses + 1 })
       g.checkAchievements()
+      fell(col, f)
       return
     }
     const next = [...picked, col]
     setPicked(next)
     sfx.coin()
     haptic(8)
-    if (next.length === FLOORS) finish(next.length)
+    if (next.length === FLOORS) void finish(next.length)
   }
 
-  function finish(f = floor) {
-    const payout = Math.round(bet * multFor(bombs, f))
-    g.win(payout)
+  function cashedOut(f: number, payout: number) {
     setPlaying(false)
     setDead(false)
     setSafe([])
@@ -81,16 +115,37 @@ export default function Tower({ onBack }: { onBack: () => void }) {
     confetti(hostRef.current, f >= FLOORS ? 150 : 70)
     f >= FLOORS ? sfx.bigWin() : sfx.win()
     haptic([0, 40, 50, 40])
-    g.bumpStats({
-      wins: g.stats.wins + 1,
-      towerCashouts: g.stats.towerCashouts + 1,
-      towerBestFloor: Math.max(g.stats.towerBestFloor, f),
-    })
     g.pushResult({
       kind: 'tower', title: `Башня · ${bombs} мин в ряду`, bet, payout,
       mult: multFor(bombs, f), extra: `этажей пройдено: ${f}`,
     })
+  }
+
+  async function finish(f = floor) {
+    if (busy) return
+    if (onlineMode()) {
+      setBusy(true)
+      try {
+        const r = await serverCall<any>('/play/tower/cashout', {})
+        applyServerRound(r)
+        cashedOut(f, r.payout)
+      } catch (e) {
+        g.toast((e as Error).message)
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+    const payout = Math.round(bet * multFor(bombs, f))
+    g.win(payout)
+    g.bumpStats({
+      spins: g.stats.spins + 1,
+      wins: g.stats.wins + 1,
+      towerCashouts: g.stats.towerCashouts + 1,
+      towerBestFloor: Math.max(g.stats.towerBestFloor, f),
+    })
     g.checkAchievements()
+    cashedOut(f, payout)
   }
 
   // этажи рисуем сверху вниз
@@ -165,11 +220,11 @@ export default function Tower({ onBack }: { onBack: () => void }) {
 
       <div className="action-bar">
         {playing ? (
-          <button className="btn" disabled={floor === 0} onClick={() => finish()}>
+          <button className="btn" disabled={busy || floor === 0} onClick={() => finish()}>
             Забрать {fmt(cashout)} MX
           </button>
         ) : (
-          <button className="btn" disabled={bet > maxBet} onClick={start}>
+          <button className="btn" disabled={busy || bet > maxBet} onClick={start}>
             {dead ? 'Ещё раз' : 'Начать'} · {fmt(bet)} MX
           </button>
         )}

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { BalancePill, BetInput, Header } from '../../components/ui'
 import { fmt } from '../../core/economy'
 import { useGame } from '../../store/game'
+import { onlineMode } from '../../lib/round'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
 const RAKE = 0.08
@@ -28,6 +29,12 @@ export default function Jackpot({ onBack }: { onBack: () => void }) {
 
   async function start() {
     if (rolling) return
+    // экономика живёт на сервере, а эти два режима туда ещё не переехали —
+    // считать их локально значит рисовать себе деньги, которых нет
+    if (onlineMode()) {
+      g.toast('С аккаунтом этот режим пока недоступен: переносим на сервер')
+      return
+    }
     if (!g.bet(bet)) { g.toast('Недостаточно MX'); return }
     setWinner(null)
     setRolling(true)

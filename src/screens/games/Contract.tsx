@@ -1,13 +1,15 @@
 import { useRef, useState } from 'react'
 import { BalancePill, Header, ItemCard } from '../../components/ui'
-import { ITEM_BY_ID, nearestItem } from '../../core/items'
+import { ITEM_BY_ID } from '../../core/items'
 import { fmt } from '../../core/economy'
+import { CONTRACT_MAX, CONTRACT_MIN, CONTRACT_RTP, playContract } from '../../core/games'
 import { useGame } from '../../store/game'
+import { playInstant } from '../../lib/round'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
-const RTP = 0.9
-const MIN_ITEMS = 3
-const MAX_ITEMS = 10
+const RTP = CONTRACT_RTP
+const MIN_ITEMS = CONTRACT_MIN
+const MAX_ITEMS = CONTRACT_MAX
 
 export default function Contract({ onBack }: { onBack: () => void }) {
   const g = useGame()
@@ -33,37 +35,45 @@ export default function Contract({ onBack }: { onBack: () => void }) {
     if (!ready || busy) return
     setBusy(true)
     setResult(null)
-    const { roll } = g.nextRoll()
+    const prices = selItems.map((i) => ITEM_BY_ID[i!.id]?.price ?? 0)
+    const burned = selItems.length
 
-    // треугольное распределение вокруг ожидания: чаще средне, редко — джекпот
-    const u = roll
-    const spread = u < 0.5
-      ? 0.25 + Math.sqrt(u * 0.5) * 1.1       // 0.25 … 0.8
-      : 0.8 + Math.pow((u - 0.5) * 2, 3) * 2.7 // 0.8 … 3.5
-    const value = Math.max(1, Math.round(ev * spread))
-    const item = nearestItem(value)
-
+    let res
+    try {
+      res = await playInstant({
+        kind: 'contract', bet: 0,
+        path: '/play/contract', body: { uids: sel },
+        local: (rng) => {
+          // офлайн ставку составляют сами предметы — сжигаем их здесь
+          g.removeItems(sel)
+          g.bumpStats({ contracts: g.stats.contracts + 1, totalWagered: g.stats.totalWagered + sum })
+          return playContract(rng, prices)
+        },
+      })
+    } catch (e) {
+      setBusy(false)
+      g.toast((e as Error).message)
+      return
+    }
+    // на сервере предметы сгорели там — убираем их и у себя
     g.removeItems(sel)
-    g.bumpStats({ contracts: g.stats.contracts + 1, totalWagered: g.stats.totalWagered + sum })
+
+    const item = ITEM_BY_ID[res.outcome.itemId!]
     sfx.tick()
     await wait(1100)
 
-    g.addItem(item.id)
-    setResult(item.id)
+    setResult(item?.id ?? null)
     setBusy(false)
     setSel([])
 
-    const win = item.price >= sum
-    if (win) { confetti(hostRef.current, 90); sfx.win(); haptic([0, 40, 50, 40]) }
+    if (res.outcome.win) { confetti(hostRef.current, 90); sfx.win(); haptic([0, 40, 50, 40]) }
     else { sfx.lose(); haptic(120) }
 
-    g.logRound({ kind: 'contract', roll, win, payout: item.price })
     g.pushResult({
       kind: 'contract',
-      title: `Контракт из ${selItems.length} предметов`,
-      bet: sum, payout: item.price, itemId: item.id,
+      title: `Контракт из ${burned} предметов`,
+      bet: sum, payout: item?.price ?? 0, itemId: item?.id,
     })
-    g.checkAchievements()
   }
 
   return (

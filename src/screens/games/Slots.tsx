@@ -2,8 +2,10 @@ import { useRef, useState } from 'react'
 import { BalancePill, BetInput, Header, Sheet } from '../../components/ui'
 import { PAY2, SLOT_SYMS, SlotSym, pickSym, slotPayout, slotsRtp } from '../../core/slots'
 import { fmt } from '../../core/economy'
+import { playSlots } from '../../core/games'
 import Icon from '../../components/Icon'
 import { useGame } from '../../store/game'
+import { playInstant } from '../../lib/round'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
 const REEL_LEN = 28
@@ -25,17 +27,32 @@ export default function Slots({ onBack }: { onBack: () => void }) {
 
   async function spin() {
     if (spinning) return
-    if (!g.bet(bet)) { g.toast('Недостаточно MX'); return }
     setResult(null)
     setSpinning(true)
     sfx.click()
 
-    const got: SlotSym[] = []
+    let res
+    try {
+      res = await playInstant({
+        kind: 'slots', bet,
+        path: '/play/slots', body: { bet },
+        local: (rng) => playSlots(rng, { bet }),
+        bump: (o) => ({
+          slotSpins: g.stats.slotSpins + 1,
+          ...(o.detail.kind === 'jackpot' ? { slotJackpots: g.stats.slotJackpots + 1 } : {}),
+        }),
+      })
+    } catch (e) {
+      setSpinning(false)
+      g.toast((e as Error).message)
+      return
+    }
+
+    const ids = res.outcome.detail.reels as string[]
+    const got: SlotSym[] = ids.map((id) => SLOT_SYMS.find((x) => x.id === id) ?? SLOT_SYMS[0])
     const strips: SlotSym[][] = []
     for (let r = 0; r < 3; r++) {
-      const { roll } = g.nextRoll(r)
-      const sym = pickSym(roll)
-      got.push(sym)
+      const sym = got[r]
       const strip: SlotSym[] = []
       for (let i = 0; i < REEL_LEN; i++) {
         strip.push(i === WIN_AT ? sym : pickSym(Math.random()))
@@ -64,26 +81,20 @@ export default function Slots({ onBack }: { onBack: () => void }) {
     await wait(base + (fast ? 120 : 520))
 
     const pay = slotPayout(got)
-    const payout = Math.round(bet * pay.mult)
+    const payout = res.outcome.payout
     if (payout > 0) {
-      g.win(payout)
-      g.bumpStats({ wins: g.stats.wins + 1 })
       if (pay.kind === 'jackpot' || pay.kind === 'three') {
         confetti(hostRef.current, pay.kind === 'jackpot' ? 200 : 110)
         sfx.bigWin()
         haptic([0, 50, 60, 50, 60, 50])
       } else { sfx.win(); haptic(30) }
     } else {
-      g.bumpStats({ losses: g.stats.losses + 1 })
       sfx.lose()
       haptic(110)
     }
-    if (pay.kind === 'jackpot') g.bumpStats({ slotJackpots: g.stats.slotJackpots + 1 })
-    g.bumpStats({ slotSpins: g.stats.slotSpins + 1 })
 
     setResult(pay)
     setSpinning(false)
-    g.logRound({ kind: 'slots', roll: 0, win: payout > 0, payout })
     g.pushResult({
       kind: 'slots',
       title: `Слоты ${got.map((s) => s.emo).join(' ')}`,
@@ -91,7 +102,6 @@ export default function Slots({ onBack }: { onBack: () => void }) {
       mult: pay.mult || undefined,
       extra: pay.kind === 'jackpot' ? 'ДЖЕКПОТ!' : pay.kind === 'three' ? 'три подряд' : pay.kind === 'two' ? 'две одинаковые' : undefined,
     })
-    g.checkAchievements()
   }
 
   return (

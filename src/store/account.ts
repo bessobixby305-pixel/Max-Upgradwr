@@ -68,6 +68,7 @@ export const useAccount = create<AccountState>()(
           try { await api.logout(refresh) } catch { /* офлайн */ }
         }
         set({ ...EMPTY })
+        useGame.getState().setCloud(false)
       },
 
       withToken: async (fn) => {
@@ -89,11 +90,24 @@ export const useAccount = create<AccountState>()(
         try {
           const me = await get().withToken((t) => api.me(t))
           set({ me, role: me.role, login: me.login, online: true })
+          // облачный профиль становится тем, что показывает интерфейс
+          useGame.getState().setCloud(true)
+          useGame.getState().adoptServer({
+            balance: me.balance,
+            xp: me.xp,
+            inventory: me.inventory,
+            achievements: me.achievements ?? [],
+            stats: me.stats as unknown as Record<string, number>,
+            fair: me.fair,
+          })
           return null
         } catch (e) {
           const err = e as ApiError
           // сессия умерла окончательно — выходим, чтобы не показывать чужой профиль
-          if (err.status === 401 || err.status === 403) set({ ...EMPTY })
+          if (err.status === 401 || err.status === 403) {
+            set({ ...EMPTY })
+            useGame.getState().setCloud(false)
+          }
           if (err.status === 0) set({ online: false })
           return err.message
         }
@@ -114,6 +128,7 @@ export const useAccount = create<AccountState>()(
             }),
           )
           set({ me })
+          await get().loadMe()
           return null
         } catch (e) {
           return (e as ApiError).message

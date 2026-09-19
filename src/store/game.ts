@@ -102,6 +102,9 @@ export interface GameState {
   promos: string[]
   toasts: { id: string; text: string }[]
   createdAt: number
+  /** играем с аккаунтом: деньги и достижения считает сервер */
+  cloud: boolean
+  setCloud: (on: boolean) => void
   /** админ-панель разблокирована на этом устройстве */
   admin: boolean
   /** коды, выпущенные с этого устройства — чтобы не потерять */
@@ -123,6 +126,18 @@ export interface GameState {
 
   // ——— предметы
   addItem: (id: string) => InvItem
+  /** Положить предмет, выданный сервером, с его же идентификатором. */
+  putItem: (it: { uid: string; id: string; price: number }) => void
+  /** Принять баланс и прогресс, посчитанные сервером. */
+  setServerState: (p: { balance: number; xp: number; nonce?: number }) => void
+  /** Полностью принять облачный профиль после входа. */
+  adoptServer: (p: {
+    balance: number; xp: number
+    inventory: { uid: string; id: string; at: number }[]
+    achievements: string[]
+    stats: Record<string, number>
+    fair: { serverSeedHash: string; clientSeed: string; nonce: number }
+  }) => void
   sellItem: (uid: string) => void
   sellAll: () => void
   removeItems: (uids: string[]) => void
@@ -142,6 +157,8 @@ export interface GameState {
   // ——— бонусы
   claimDaily: () => number | null
   claimWheel: (value: number) => void
+  /** Отметить забранный дейлик, когда его выдал сервер. */
+  markDaily: (streak: number) => void
   claimRescue: () => boolean
   redeemPromo: (code: string) => { ok: boolean; msg: string }
 
@@ -180,8 +197,11 @@ export const useGame = create<GameState>()(
       promos: [],
       toasts: [],
       createdAt: Date.now(),
+      cloud: false,
       admin: false,
       adminCodes: [],
+
+      setCloud: (on) => set({ cloud: on }),
 
       bet: (amount) => {
         if (amount <= 0 || get().balance < amount) return false
@@ -254,6 +274,40 @@ export const useGame = create<GameState>()(
         return it
       },
 
+      putItem: ({ uid: id_, id }) => {
+        const def = ITEM_BY_ID[id]
+        set((s) => ({
+          inventory: [{ uid: id_, id, at: Date.now() }, ...s.inventory],
+          stats: { ...s.stats, bestItemPrice: Math.max(s.stats.bestItemPrice, def?.price ?? 0) },
+        }))
+        if (def) {
+          get().pushDrop({
+            author: { name: 'Ты', emo: '🦄' },
+            result: { kind: 'case', title: 'Дроп', bet: 0, payout: def.price, itemId: id },
+          })
+        }
+      },
+
+      adoptServer: (p) =>
+        set((s) => ({
+          balance: p.balance,
+          xp: p.xp,
+          inventory: p.inventory.map((i) => ({ uid: i.uid, id: i.id, at: i.at })),
+          achievements: [...new Set([...s.achievements, ...p.achievements])],
+          stats: { ...s.stats, ...p.stats, maxBalance: Math.max(s.stats.maxBalance, p.balance) },
+          // хэш и клиентский сид приходят с сервера, серверный сид остаётся
+          // скрытым до смены цепочки — офлайн-значение больше не используется
+          fair: { ...s.fair, clientSeed: p.fair.clientSeed, serverSeedHash: p.fair.serverSeedHash, nonce: p.fair.nonce },
+        })),
+
+      setServerState: ({ balance, xp, nonce }) =>
+        set((s) => ({
+          balance,
+          xp,
+          stats: { ...s.stats, maxBalance: Math.max(s.stats.maxBalance, balance) },
+          fair: nonce === undefined ? s.fair : { ...s.fair, nonce },
+        })),
+
       sellItem: (u) => {
         const item = get().inventory.find((i) => i.uid === u)
         if (!item) return
@@ -322,6 +376,8 @@ export const useGame = create<GameState>()(
           (a) => !s.achievements.includes(a.id) && a.check(st),
         )
         if (!unlocked.length) return
+        // онлайн достижения выдаёт сервер — здесь только показываем
+        if (s.cloud) return
         set((prev) => ({ achievements: [...prev.achievements, ...unlocked.map((a) => a.id)] }))
         for (const a of unlocked) {
           get().addBalance(a.reward)
@@ -348,9 +404,12 @@ export const useGame = create<GameState>()(
         return reward
       },
 
+      /** Деньги начисляет расчёт раунда, здесь — только отметка кулдауна
+       *  и запись в ленту. */
+      markDaily: (streak) => set({ daily: { last: Date.now(), streak } }),
+
       claimWheel: (value) => {
         set({ wheelLast: Date.now() })
-        get().addBalance(value)
         get().pushResult({ kind: 'bonus', title: 'Колесо дня', bet: 0, payout: value })
         get().checkAchievements()
       },

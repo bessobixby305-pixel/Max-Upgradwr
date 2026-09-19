@@ -3,16 +3,18 @@ import { BalancePill, Header, ItemCard, Sheet } from '../components/ui'
 import { RARITY_NAME, ITEM_BY_ID, rarityOf } from '../core/items'
 import { SELL_RATE, fmt } from '../core/economy'
 import { useGame } from '../store/game'
+import { sellItems } from '../lib/round'
 import { sfx } from '../lib/fx'
 
 type Sort = 'new' | 'price' | 'name'
 
 export default function Inventory() {
   const inv = useGame((s) => s.inventory)
-  const sellItem = useGame((s) => s.sellItem)
-  const sellAll = useGame((s) => s.sellAll)
   const pushText = useGame((s) => s.pushText)
   const toast = useGame((s) => s.toast)
+  const sell = async (uids: string[]) => {
+    try { await sellItems(uids); sfx.coin() } catch (e) { toast((e as Error).message) }
+  }
   const [sort, setSort] = useState<Sort>('new')
   const [sel, setSel] = useState<string | null>(null)
 
@@ -42,7 +44,7 @@ export default function Inventory() {
               <button
                 className="chip"
                 style={{ marginLeft: 'auto', color: 'var(--red)', flex: 'none' }}
-                onClick={() => { sellAll(); sfx.coin() }}
+                onClick={() => void sell(inv.map((i) => i.uid))}
               >Продать всё</button>
             )}
           </div>
@@ -81,7 +83,7 @@ export default function Inventory() {
               >Отправить в чат</button>
               <button
                 className="btn"
-                onClick={() => { sellItem(selItem.uid); sfx.coin(); setSel(null) }}
+                onClick={() => { void sell([selItem.uid]); setSel(null) }}
               >Продать {fmt(selDef.price * SELL_RATE)}</button>
             </div>
           </div>

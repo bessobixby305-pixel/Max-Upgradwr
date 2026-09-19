@@ -4,6 +4,7 @@ import { BalancePill, Header, Sheet } from '../components/ui'
 import { ACHIEVEMENTS, PROMOS, fmt, levelFromXp, titleFor } from '../core/economy'
 import { useGame } from '../store/game'
 import { useAccount } from '../store/account'
+import { redeemCode } from '../lib/round'
 import Icon, { IconName } from '../components/Icon'
 import { sfx } from '../lib/fx'
 
@@ -150,8 +151,8 @@ export default function Profile({ go, onBack }: { go: (r: Route) => void; onBack
         <button
           className="btn"
           style={{ marginTop: 12 }}
-          onClick={() => {
-            const r = g.redeemPromo(code)
+          onClick={async () => {
+            const r = await redeemCode(code)
             g.toast(r.msg)
             if (r.ok) { sfx.coin(); setCode(''); setPromoOpen(false) }
           }}

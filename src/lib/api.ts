@@ -85,10 +85,16 @@ export interface ServerProfile {
   balance: number
   xp: number
   imported: boolean
+  achievements: string[]
+  bonuses: { dailyAt: number; dailyStreak: number; wheelAt: number; rescueAt: number }
   stats: {
     spins: number; wins: number; losses: number; casesOpened: number
     totalWagered: number; totalWon: number; bestMult: number
     biggestWin: number; maxBalance: number
+    bestItemPrice: number; minesCashouts: number; crashCashouts: number; bestCrash: number
+    contracts: number; battlesWon: number; towerCashouts: number; towerBestFloor: number
+    slotSpins: number; slotJackpots: number; doubleGreens: number; diceWins: number
+    jackpotWins: number
   }
   inventory: { uid: string; id: string; at: number }[]
   fair: { serverSeedHash: string; clientSeed: string; nonce: number }

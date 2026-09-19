@@ -1,11 +1,12 @@
 import { useRef, useState } from 'react'
 import { BalancePill, Header } from '../../components/ui'
 import { WHEEL_COOLDOWN, WHEEL_SECTORS, fmt } from '../../core/economy'
+import { playWheel } from '../../core/games'
 import { useGame } from '../../store/game'
+import { onlineMode, playInstant } from '../../lib/round'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
 const COLORS = ['#4B49E5', '#3B7FC4', '#1E9E52', '#C98411', '#C7467E', '#8557CE', '#12938D', '#B8621C', '#D94437']
-const TOTAL = WHEEL_SECTORS.reduce((s, x) => s + x.weight, 0)
 
 export default function DailyWheel({ onBack }: { onBack: () => void }) {
   const g = useGame()
@@ -14,7 +15,8 @@ export default function DailyWheel({ onBack }: { onBack: () => void }) {
   const [won, setWon] = useState<number | null>(null)
   const hostRef = useRef<HTMLDivElement>(null)
 
-  const left = WHEEL_COOLDOWN - (Date.now() - g.wheelLast)
+  // онлайн кулдаун держит сервер — он же и откажет, если рано
+  const left = onlineMode() ? 0 : WHEEL_COOLDOWN - (Date.now() - g.wheelLast)
   const ready = left <= 0
   const hours = Math.ceil(left / 3600000)
 
@@ -27,13 +29,19 @@ export default function DailyWheel({ onBack }: { onBack: () => void }) {
     setWon(null)
     sfx.click()
 
-    const { roll } = g.nextRoll()
-    let acc = 0
-    let idx = WHEEL_SECTORS.length - 1
-    for (let i = 0; i < WHEEL_SECTORS.length; i++) {
-      acc += WHEEL_SECTORS[i].weight / TOTAL
-      if (roll < acc) { idx = i; break }
+    let res
+    try {
+      res = await playInstant({
+        kind: 'bonus', bet: 0,
+        path: '/play/wheel', body: {},
+        local: (rng) => playWheel(rng),
+      })
+    } catch (e) {
+      setSpinning(false)
+      g.toast((e as Error).message)
+      return
     }
+    const idx = Number(res.outcome.detail.sector)
 
     const center = idx * seg + seg / 2
     setRot((r) => r + 360 * 6 + ((center - ((r % 360) + 360) % 360) + 360) % 360)
@@ -49,9 +57,9 @@ export default function DailyWheel({ onBack }: { onBack: () => void }) {
     tick()
 
     await wait(4400)
-    const value = WHEEL_SECTORS[idx].value
+    const value = res.outcome.payout
+    // офлайн деньги уже начислены расчётом раунда, отмечаем только кулдаун
     g.claimWheel(value)
-    g.logRound({ kind: 'bonus', roll, win: true, payout: value })
     setWon(value)
     setSpinning(false)
     confetti(hostRef.current, value >= 2500 ? 150 : 70)

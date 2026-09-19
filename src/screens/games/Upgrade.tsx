@@ -2,9 +2,11 @@ import { useRef, useState } from 'react'
 import Wheel from '../../components/Wheel'
 import WinOverlay, { WinInfo } from '../../components/WinOverlay'
 import { BalancePill, BetInput, Header, ItemCard, Sheet } from '../../components/ui'
-import { MAX_MULT, MIN_MULT, UPGRADE_RTP, fmt } from '../../core/economy'
+import { MAX_MULT, MIN_MULT, fmt } from '../../core/economy'
+import { playUpgrade, upgradeChance } from '../../core/games'
 import { ITEM_BY_ID, sortedByPrice } from '../../core/items'
 import { useGame } from '../../store/game'
+import { playInstant } from '../../lib/round'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
 type Mode = 'mult' | 'item'
@@ -31,20 +33,34 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
   const target = ITEM_BY_ID[targetId]
 
   const effMult = mode === 'mult' ? mult : target ? target.price / Math.max(1, bet) : 1
-  const chance = Math.min(0.95, UPGRADE_RTP / Math.max(MIN_MULT, effMult))
+  const chance = upgradeChance(effMult)
   const payout = Math.round(bet * effMult)
   const canSpin = !spinning && bet >= 1 && bet <= maxBet && effMult >= MIN_MULT
 
   async function spin() {
     if (!canSpin) return
-    if (!g.bet(bet)) { g.toast('Недостаточно MX'); return }
     setResult(null)
     setSpinning(true)
     sfx.click()
     haptic(10)
 
-    const { roll } = g.nextRoll()
-    const win = roll < chance
+    const onItem = mode === 'item' && !!target
+    let res
+    try {
+      res = await playInstant({
+        kind: 'upgrade', bet,
+        path: '/play/upgrade',
+        body: onItem ? { bet, targetId: targetId } : { bet, mult },
+        local: (rng) => playUpgrade(rng, onItem ? { bet, targetId } : { bet, mult }),
+      })
+    } catch (e) {
+      setSpinning(false)
+      setAuto(0)
+      g.toast((e as Error).message)
+      return
+    }
+    const roll = Number(res.outcome.detail.roll)
+    const win = res.outcome.win
     const dur = g.settings.fastMode ? FAST_MS : SPIN_MS
 
     // стрелка должна встать ровно на roll*360 после нескольких оборотов
@@ -73,21 +89,14 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
     setSpinning(false)
     setResult(win ? 'win' : 'lose')
 
-    const gained = win ? payout : 0
+    const gained = res.outcome.payout
     if (win) {
       // Награда одна: либо MX на баланс, либо предмет в инвентарь.
-      if (mode === 'item' && target) {
-        g.addItem(target.id)
-        g.recordWin(target.price)
+      if (onItem && target) {
         setWinInfo({ itemId: target.id, label: `Апгрейд x${effMult.toFixed(2)}` })
-      } else {
-        g.win(gained)
-        if (effMult >= 5) setWinInfo({ amount: gained, label: `Апгрейд x${effMult.toFixed(2)}` })
+      } else if (effMult >= 5) {
+        setWinInfo({ amount: gained, label: `Апгрейд x${effMult.toFixed(2)}` })
       }
-      g.bumpStats({
-        wins: g.stats.wins + 1,
-        bestMult: Math.max(g.stats.bestMult, effMult),
-      })
       confetti(hostRef.current, effMult >= 8 ? 140 : 70)
       effMult >= 8 ? sfx.bigWin() : sfx.win()
       haptic([0, 40, 60, 40])
@@ -95,10 +104,9 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
         kind: 'upgrade',
         title: `Апгрейд x${effMult.toFixed(2)}`,
         bet, payout: gained, chance, mult: effMult,
-        itemId: mode === 'item' ? targetId : undefined,
+        itemId: onItem ? targetId : undefined,
       })
     } else {
-      g.bumpStats({ losses: g.stats.losses + 1 })
       sfx.lose()
       haptic(160)
       g.pushResult({
@@ -107,9 +115,6 @@ export default function Upgrade({ onBack }: { onBack: () => void }) {
         bet, payout: 0, chance, mult: effMult,
       })
     }
-    g.bumpStats({ spins: g.stats.spins + 1 })
-    g.logRound({ kind: 'upgrade', roll, chance, win, payout: gained })
-    g.checkAchievements()
 
     if (auto > 0 && !stopAuto.current) {
       setAuto((a) => a - 1)

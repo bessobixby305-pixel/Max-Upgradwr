@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { App as CapApp } from '@capacitor/app'
 import { useGame } from './store/game'
+import { useAccount } from './store/account'
 import { Toasts } from './components/ui'
 import BonusSheet from './components/BonusSheet'
 import Icon, { IconName } from './components/Icon'
@@ -84,6 +85,11 @@ export default function App() {
   }, [pop])
 
   useEffect(() => { useGame.getState().checkAchievements() }, [])
+
+  // вход уже был — забираем свежий баланс и инвентарь из облака
+  useEffect(() => {
+    if (useAccount.getState().access) void useAccount.getState().loadMe()
+  }, [])
 
   const top = stack[stack.length - 1]
 

@@ -14,6 +14,11 @@ const srv = spawn('npx', ['tsx', 'src/index.ts'], {
   stdio: ['ignore', 'pipe', 'pipe'],
 })
 srv.stderr.on('data', (d) => { const s = String(d); if (s.includes('Error')) console.error(s) })
+// иначе упавший тест оставит сервер висеть на порту, и следующий прогон
+// будет разговаривать со старым процессом
+process.on('exit', () => srv.kill())
+process.on('uncaughtException', (e) => { console.error(e); srv.kill(); process.exit(1) })
+process.on('unhandledRejection', (e) => { console.error(e); srv.kill(); process.exit(1) })
 
 const api = async (path: string, init?: RequestInit & { token?: string }) => {
   const headers: Record<string, string> = { 'content-type': 'application/json' }

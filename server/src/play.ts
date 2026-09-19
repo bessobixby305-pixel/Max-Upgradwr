@@ -12,7 +12,7 @@ import {
 } from './core/games.js'
 import { ITEM_BY_ID } from './core/items.js'
 import {
-  DAILY_COOLDOWN, DAILY_RESET, RESCUE_AMOUNT, RESCUE_COOLDOWN, RESCUE_THRESHOLD,
+  DAILY_COOLDOWN, DAILY_RESET, PROMOS, RESCUE_AMOUNT, RESCUE_COOLDOWN, RESCUE_THRESHOLD,
   SELL_RATE, WHEEL_COOLDOWN, dailyReward,
 } from './core/economy.js'
 
@@ -197,6 +197,66 @@ export function playRoutes(app: FastifyInstance, secret: string) {
       data: { balance: { increment: BigInt(RESCUE_AMOUNT) } },
     })
     return { amount: RESCUE_AMOUNT, balance: n(profile.balance) }
+  })
+
+  // ——— промокоды: статические коды из общего ядра, учёт активаций в базе
+  route('/promo', z.object({ code: z.string().trim().min(1).max(40) }), async (userId, b) => {
+    const code = b.code.toUpperCase()
+    const def = PROMOS[code]
+    if (!def) throw new PlayError('Неверный код')
+
+    const promo = await db.promo.upsert({
+      where: { code },
+      update: {},
+      create: {
+        code,
+        amount: BigInt(def.amount ?? 0),
+        items: def.items ?? [],
+        note: def.label,
+      },
+    })
+    if (promo.revokedAt) throw new PlayError('Код больше не действует')
+
+    try {
+      await db.promoUse.create({ data: { promoId: promo.id, userId } })
+    } catch {
+      // уникальный индекс не дал активировать код дважды
+      throw new PlayError('Код уже использован')
+    }
+
+    const items = def.items ?? []
+    const [profile] = await db.$transaction([
+      db.profile.update({
+        where: { userId },
+        data: { balance: { increment: BigInt(def.amount ?? 0) } },
+      }),
+      db.promo.update({ where: { id: promo.id }, data: { usedCount: { increment: 1 } } }),
+      ...(items.length
+        ? [db.item.createMany({
+            data: items.map((id) => ({
+              userId, itemId: id, price: ITEM_BY_ID[id]?.price ?? 0, source: `promo:${code}`,
+            })),
+          })]
+        : []),
+    ])
+    if (profile.balance > profile.maxBalance) {
+      await db.profile.update({ where: { userId }, data: { maxBalance: profile.balance } })
+    }
+
+    const created = items.length
+      ? await db.item.findMany({
+          where: { userId, source: `promo:${code}` },
+          orderBy: { acquiredAt: 'desc' },
+          take: items.length,
+        })
+      : []
+
+    return {
+      label: def.label,
+      amount: def.amount ?? 0,
+      balance: n(profile.balance),
+      items: created.map((i) => ({ uid: i.id, id: i.itemId, price: i.price })),
+    }
   })
 
   // ——— продажа предметов

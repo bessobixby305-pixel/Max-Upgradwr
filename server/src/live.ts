@@ -306,6 +306,25 @@ export function liveRoutes(app: FastifyInstance, secret: string) {
     return { ...done, crashed: false, point: sec.point, mult: at, payout }
   })
 
+  /** Опрос во время полёта. Пока раунд жив — ответ пустой: точка взрыва
+   *  не раскрывается ни на миллисекунду раньше срока. Как только
+   *  расчётное время взрыва прошло, раунд закрывается проигрышем. */
+  route('/play/crash/peek', z.object({}), async (userId) => {
+    const round = await findLive(userId, 'crash')
+    if (!round) return { alive: false }
+
+    const sec = round.secret as unknown as CrashSecret
+    const elapsed = (Date.now() - round.startedAt.getTime()) / 1000
+    if (elapsed <= crashTimeFor(sec.point)) {
+      return { alive: true, mult: crashMultAt(elapsed) }
+    }
+    const done = await finish(userId, round, {
+      win: false, payout: 0, value: 0,
+      detail: { point: sec.point, reason: 'expired' },
+    })
+    return { ...done, alive: false, crashed: true, point: sec.point }
+  })
+
   // ——————————————————————————————— общее состояние
 
   app.get('/play/state', async (req, reply) => {

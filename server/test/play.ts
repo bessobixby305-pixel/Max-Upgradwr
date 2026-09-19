@@ -15,6 +15,11 @@ const srv = spawn('npx', ['tsx', 'src/index.ts'], {
   stdio: ['ignore', 'pipe', 'pipe'],
 })
 srv.stderr.on('data', (d) => { const s = String(d); if (s.includes('Error')) console.error(s) })
+// иначе упавший тест оставит сервер висеть на порту, и следующий прогон
+// будет разговаривать со старым процессом
+process.on('exit', () => srv.kill())
+process.on('uncaughtException', (e) => { console.error(e); srv.kill(); process.exit(1) })
+process.on('unhandledRejection', (e) => { console.error(e); srv.kill(); process.exit(1) })
 
 let token = ''
 const api = async (path: string, body?: unknown, auth = true) => {
@@ -187,6 +192,23 @@ console.log('\nБОНУСЫ')
 
   const r1 = await api('/bonus/rescue', {})
   check('страховка при большом балансе не выдаётся', r1.status === 400, r1.body?.error ?? '')
+}
+
+console.log('\nПРОМОКОДЫ')
+{
+  const before = (await me()).balance
+  const r = await api('/promo', { code: 'max' })
+  check('код принят без учёта регистра', r.status === 200 && r.body.amount === 500, r.body?.error ?? '')
+  check('деньги зачислены', r.body.balance === before + 500)
+  const again = await api('/promo', { code: 'MAX' })
+  check('повторная активация отклонена', again.status === 400, again.body?.error ?? '')
+  const bad = await api('/promo', { code: 'НЕТТАКОГО' })
+  check('выдуманный код отклонён', bad.status === 400, bad.body?.error ?? '')
+
+  const items = await api('/promo', { code: 'CAT' })
+  check('предметный код выдал вещи', items.status === 200 && items.body.items.length === 3, String(items.body?.items?.length))
+  const inv = (await me()).inventory.map((i: any) => i.uid)
+  check('вещи лежат в инвентаре', items.body.items.every((i: any) => inv.includes(i.uid)))
 }
 
 console.log('\nДОСТИЖЕНИЯ')

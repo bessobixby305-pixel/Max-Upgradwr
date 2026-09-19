@@ -1,12 +1,14 @@
 import { useRef, useState } from 'react'
 import { BalancePill, BetInput, Header } from '../../components/ui'
 import { fmt } from '../../core/economy'
+import { DICE_MAX_T, DICE_MIN_T, DICE_RTP, playDice } from '../../core/games'
 import { useGame } from '../../store/game'
+import { playInstant } from '../../lib/round'
 import { confetti, haptic, sfx, wait } from '../../lib/fx'
 
-const RTP = 0.95
-const MIN_T = 2
-const MAX_T = 98
+const RTP = DICE_RTP
+const MIN_T = DICE_MIN_T
+const MAX_T = DICE_MAX_T
 
 export default function Dice({ onBack }: { onBack: () => void }) {
   const g = useGame()
@@ -26,13 +28,24 @@ export default function Dice({ onBack }: { onBack: () => void }) {
 
   async function roll() {
     if (rolling) return
-    if (!g.bet(bet)) { g.toast('Недостаточно MX'); return }
     setRolling(true)
     setWon(null)
     sfx.click()
 
-    const { roll: r } = g.nextRoll()
-    const v = Math.floor(r * 10000) / 100 // 0.00 … 99.99
+    let res
+    try {
+      res = await playInstant({
+        kind: 'dice', bet,
+        path: '/play/dice', body: { bet, target, over },
+        local: (rng) => playDice(rng, { bet, target, over }),
+        bump: (o) => (o.win ? { diceWins: g.stats.diceWins + 1 } : {}),
+      })
+    } catch (e) {
+      setRolling(false)
+      g.toast((e as Error).message)
+      return
+    }
+    const v = Number(res.outcome.detail.value) // 0.00 … 99.99
 
     // анимация «прокрутки» числа
     const dur = g.settings.fastMode ? 350 : 1100
@@ -49,16 +62,13 @@ export default function Dice({ onBack }: { onBack: () => void }) {
     })
     await wait(120)
 
-    const win = over ? v > target : v < target
-    const got = win ? payout : 0
+    const win = res.outcome.win
+    const got = res.outcome.payout
     if (win) {
-      g.win(got)
-      g.bumpStats({ wins: g.stats.wins + 1, diceWins: g.stats.diceWins + 1 })
       confetti(hostRef.current, mult >= 5 ? 130 : 60)
       mult >= 5 ? sfx.bigWin() : sfx.win()
       haptic([0, 40, 50, 40])
     } else {
-      g.bumpStats({ losses: g.stats.losses + 1 })
       sfx.lose()
       haptic(130)
     }
@@ -66,14 +76,12 @@ export default function Dice({ onBack }: { onBack: () => void }) {
     setWon(win)
     setHistory((h) => [{ v, w: win }, ...h].slice(0, 12))
     setRolling(false)
-    g.logRound({ kind: 'dice', roll: r, chance, win, payout: got })
     g.pushResult({
       kind: 'dice',
       title: `Кости ${over ? '>' : '<'} ${target}`,
-      bet, payout: got, chance, mult,
+      bet, payout: got, chance: res.outcome.chance ?? chance, mult,
       extra: `выпало ${v.toFixed(2)}`,
     })
-    g.checkAchievements()
   }
 
   return (

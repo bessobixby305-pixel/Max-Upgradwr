@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { BalancePill, BetInput, Header } from '../../components/ui'
 import { fmt } from '../../core/economy'
+import { crashPoint } from '../../core/games'
 import { useGame } from '../../store/game'
+import { applyServerRound, localRng, onlineMode, serverCall } from '../../lib/round'
 import { confetti, haptic, sfx } from '../../lib/fx'
 
-const HOUSE_EDGE = 0.05
-
-/** Точка краша из честного числа: тяжёлый хвост, RTP ≈ 95%. */
-function crashPoint(roll: number) {
-  if (roll < HOUSE_EDGE) return 1
-  const c = (1 - HOUSE_EDGE) / (1 - roll)
-  return Math.max(1, Math.floor(c * 100) / 100)
-}
+/** Как часто спрашивать сервер, не взорвалось ли. */
+const PEEK_MS = 350
 
 export default function Crash({ onBack }: { onBack: () => void }) {
   const g = useGame()
@@ -25,25 +21,62 @@ export default function Crash({ onBack }: { onBack: () => void }) {
   const raf = useRef(0)
   const startT = useRef(0)
   const cashed = useRef(false)
+  const lastPeek = useRef(0)
+  const peeking = useRef(false)
+  const [busy, setBusy] = useState(false)
   const hostRef = useRef<HTMLDivElement>(null)
 
   const maxBet = Math.max(1, Math.floor(g.balance))
 
   useEffect(() => () => cancelAnimationFrame(raf.current), [])
 
-  function start() {
-    if (state === 'fly') return
-    if (!g.bet(bet)) { g.toast('Недостаточно MX'); return }
-    const { roll } = g.nextRoll()
-    target.current = crashPoint(roll)
+  async function start() {
+    if (state === 'fly' || busy) return
+    setBusy(true)
+    try {
+      if (onlineMode()) {
+        // точку взрыва знает только сервер — здесь её нет до конца раунда
+        const r = await serverCall<{ balance: number }>('/play/crash/start', { bet })
+        g.setServerState({ balance: r.balance, xp: g.xp })
+        target.current = Infinity
+      } else {
+        if (!g.bet(bet)) throw new Error('Недостаточно MX')
+        target.current = crashPoint(localRng().roll())
+      }
+    } catch (e) {
+      setBusy(false)
+      g.toast((e as Error).message)
+      return
+    }
+    setBusy(false)
     cashed.current = false
     setMult(1)
     setPoints('')
     setState('fly')
     startT.current = performance.now()
+    lastPeek.current = performance.now()
     sfx.click()
-    g.logRound({ kind: 'crash', roll, win: false, payout: 0 })
     tick()
+  }
+
+  /** Спросить сервер, не взорвалось ли уже. */
+  async function peek() {
+    if (peeking.current || cashed.current) return
+    peeking.current = true
+    try {
+      const r = await serverCall<any>('/play/crash/peek', {})
+      if (r.crashed) {
+        cashed.current = true
+        target.current = r.point
+        setMult(r.point)
+        applyServerRound(r)
+        boom()
+      }
+    } catch {
+      // связь моргнула — попробуем на следующем тике
+    } finally {
+      peeking.current = false
+    }
   }
 
   function tick() {
@@ -54,7 +87,7 @@ export default function Crash({ onBack }: { onBack: () => void }) {
 
       if (!cashed.current && autoAt > 1 && cur >= autoAt && autoAt <= target.current) {
         setMult(autoAt)
-        cashOut(autoAt)
+        void cashOut(autoAt)
         return
       }
 
@@ -63,6 +96,13 @@ export default function Crash({ onBack }: { onBack: () => void }) {
         boom()
         return
       }
+
+      // онлайн предел неизвестен, поэтому раз в PEEK_MS спрашиваем сервер
+      if (onlineMode() && performance.now() - lastPeek.current > PEEK_MS) {
+        lastPeek.current = performance.now()
+        void peek()
+      }
+      if (cashed.current) return
 
       setMult(cur)
       // траектория графика
@@ -82,25 +122,49 @@ export default function Crash({ onBack }: { onBack: () => void }) {
     })
   }
 
-  function cashOut(at?: number) {
+  async function cashOut(at?: number) {
     if (state !== 'fly' || cashed.current) return
     cashed.current = true
     cancelAnimationFrame(raf.current)
     const m = at ?? mult
+
+    if (onlineMode()) {
+      try {
+        const r = await serverCall<any>('/play/crash/cashout', { at: m })
+        applyServerRound(r)
+        if (r.crashed) {
+          target.current = r.point
+          setMult(r.point)
+          boom()
+          return
+        }
+        finishCashout(m, r.payout)
+      } catch (e) {
+        cashed.current = false
+        g.toast((e as Error).message)
+      }
+      return
+    }
+
     const payout = Math.round(bet * m)
     g.win(payout)
+    g.bumpStats({
+      spins: g.stats.spins + 1,
+      wins: g.stats.wins + 1,
+      crashCashouts: g.stats.crashCashouts + 1,
+      bestCrash: Math.max(g.stats.bestCrash, m),
+    })
+    g.checkAchievements()
+    finishCashout(m, payout)
+  }
+
+  function finishCashout(m: number, payout: number) {
     setState('cashed')
     setHistory((h) => [target.current, ...h].slice(0, 12))
     confetti(hostRef.current, m >= 5 ? 120 : 60)
     m >= 5 ? sfx.bigWin() : sfx.win()
     haptic([0, 40, 50, 40])
-    g.bumpStats({
-      wins: g.stats.wins + 1,
-      crashCashouts: g.stats.crashCashouts + 1,
-      bestCrash: Math.max(g.stats.bestCrash, m),
-    })
     g.pushResult({ kind: 'crash', title: `Краш x${m.toFixed(2)}`, bet, payout, mult: m })
-    g.checkAchievements()
   }
 
   function boom() {
@@ -109,12 +173,14 @@ export default function Crash({ onBack }: { onBack: () => void }) {
     setHistory((h) => [target.current, ...h].slice(0, 12))
     sfx.boom()
     haptic([0, 100, 60, 160])
-    g.bumpStats({ losses: g.stats.losses + 1 })
+    if (!onlineMode()) {
+      g.bumpStats({ spins: g.stats.spins + 1, losses: g.stats.losses + 1 })
+      g.checkAchievements()
+    }
     g.pushResult({
       kind: 'crash', title: `Краш x${target.current.toFixed(2)}`, bet, payout: 0,
       extra: 'не успел забрать',
     })
-    g.checkAchievements()
   }
 
   return (

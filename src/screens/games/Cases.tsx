@@ -4,6 +4,8 @@ import WinOverlay, { WinInfo } from '../../components/WinOverlay'
 import { CASES, CaseDef, caseRtp, dropChance, pickDrop } from '../../core/cases'
 import { ITEM_BY_ID, ItemDef, RARITY_COLOR, rarityOf } from '../../core/items'
 import { fmt } from '../../core/economy'
+import { playCase } from '../../core/games'
+import { playInstant } from '../../lib/round'
 import Icon from '../../components/Icon'
 import TileArt from '../../components/TileArt'
 import { tintVars } from '../Games'
@@ -34,27 +36,38 @@ export default function Cases({ onBack, asTab }: { onBack: () => void; asTab?: b
 
   async function open() {
     if (!active || rolling) return
-    if (!g.bet(price)) { g.toast('Недостаточно MX'); return }
+    const box = active
     setWon(null)
     setRolling(true)
     sfx.click()
 
+    // каждый кейс — отдельный раунд, поэтому и запросов столько же
     const results: ItemDef[] = []
-    const newStrips: ItemDef[][] = []
     for (let k = 0; k < count; k++) {
-      const { roll } = g.nextRoll(k)
-      const item = pickDrop(active, roll)
-      results.push(item)
+      try {
+        const res = await playInstant({
+          kind: 'case', bet: box.price,
+          path: '/play/case', body: { caseId: box.id },
+          local: (rng) => playCase(rng, box),
+          bump: () => ({ casesOpened: g.stats.casesOpened + k + 1 }),
+        })
+        const item = ITEM_BY_ID[res.outcome.itemId!]
+        if (item) results.push(item)
+      } catch (e) {
+        setRolling(false)
+        if (!results.length) { g.toast((e as Error).message); return }
+        break
+      }
+    }
+    if (!results.length) { setRolling(false); return }
+
+    const newStrips: ItemDef[][] = results.map((item) => {
       const strip: ItemDef[] = []
       for (let i = 0; i < STRIP; i++) {
-        strip.push(i === WIN_INDEX ? item : pickDrop(active, Math.random()))
+        strip.push(i === WIN_INDEX ? item : pickDrop(box, Math.random()))
       }
-      newStrips.push(strip)
-      g.logRound({
-        kind: 'case', roll, chance: dropChance(active, item.id),
-        win: item.price >= active.price, payout: item.price,
-      })
-    }
+      return strip
+    })
 
     setStrips(newStrips)
     setOffset(0)
@@ -79,25 +92,19 @@ export default function Cases({ onBack, asTab }: { onBack: () => void; asTab?: b
     await wait(dur + 150)
 
     // Награда за кейс — сам предмет; деньги за него даёт продажа в инвентаре.
-    let total = 0
-    for (const item of results) {
-      g.addItem(item.id)
-      total += item.price
-    }
-    g.recordWin(total)
-    g.bumpStats({ casesOpened: g.stats.casesOpened + count })
+    const total = results.reduce((s, i) => s + i.price, 0)
     g.pushResult({
       kind: 'case',
-      title: `Кейс «${active.name}»${count > 1 ? ` ×${count}` : ''}`,
-      bet: price, payout: total,
+      title: `Кейс «${box.name}»${results.length > 1 ? ` ×${results.length}` : ''}`,
+      bet: box.price * results.length, payout: total,
       itemId: results.reduce((a, b) => (a.price > b.price ? a : b)).id,
     })
 
     const bestItem = results.reduce((a, b) => (a.price > b.price ? a : b))
     const best = bestItem.price
     // показываем крупный оверлей, когда дроп заметно дороже кейса
-    if (best >= active.price * 3) {
-      setWinInfo({ itemId: bestItem.id, label: `Кейс «${active.name}»` })
+    if (best >= box.price * 3) {
+      setWinInfo({ itemId: bestItem.id, label: `Кейс «${box.name}»` })
     }
     if (total > price) {
       confetti(hostRef.current, best > price * 8 ? 140 : 70)
@@ -109,7 +116,6 @@ export default function Cases({ onBack, asTab }: { onBack: () => void; asTab?: b
 
     setWon(results)
     setRolling(false)
-    g.checkAchievements()
   }
 
   return (

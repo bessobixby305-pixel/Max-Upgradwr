@@ -5,6 +5,7 @@ import {
   DAILY_COOLDOWN, PROMOS, WHEEL_COOLDOWN, dailyReward, fmt,
 } from '../core/economy'
 import { useGame } from '../store/game'
+import { onlineMode, serverCall } from '../lib/round'
 import { sfx } from '../lib/fx'
 
 /** Бонусы под кнопкой «+» в шапке: дейлик, колесо, промокоды. */
@@ -12,8 +13,10 @@ export default function BonusSheet({
   open, onClose, go,
 }: { open: boolean; onClose: () => void; go: (r: Route) => void }) {
   const g = useGame()
-  const dailyReady = Date.now() - g.daily.last >= DAILY_COOLDOWN
-  const wheelReady = Date.now() - g.wheelLast >= WHEEL_COOLDOWN
+  // онлайн кулдауны держит сервер: он и ответит, если рано
+  const online = onlineMode()
+  const dailyReady = online || Date.now() - g.daily.last >= DAILY_COOLDOWN
+  const wheelReady = online || Date.now() - g.wheelLast >= WHEEL_COOLDOWN
   const nextStreak = Math.min(g.daily.streak + 1, 7)
 
   return (
@@ -23,10 +26,22 @@ export default function BonusSheet({
           className="row"
           disabled={!dailyReady}
           style={{ opacity: dailyReady ? 1 : .5 }}
-          onClick={() => {
-            const r = g.claimDaily()
-            if (r) { sfx.coin(); g.toast(`+${fmt(r)} MX · день ${g.daily.streak}`) }
+          onClick={async () => {
             onClose()
+            if (!online) {
+              const r = g.claimDaily()
+              if (r) { sfx.coin(); g.toast(`+${fmt(r)} MX · день ${g.daily.streak}`) }
+              return
+            }
+            try {
+              const r = await serverCall<{ amount: number; streak: number; balance: number }>('/bonus/daily')
+              g.setServerState({ balance: r.balance, xp: g.xp })
+              g.markDaily(r.streak)
+              sfx.coin()
+              g.toast(`+${fmt(r.amount)} MX · день ${r.streak}`)
+            } catch (e) {
+              g.toast((e as Error).message)
+            }
           }}
         >
           <Icon name="gift" size={20} className="row-ico" />
@@ -59,10 +74,21 @@ export default function BonusSheet({
         {g.balance <= 50 && (
           <button
             className="row"
-            onClick={() => {
-              if (g.claimRescue()) { sfx.coin(); g.toast('+100 MX') }
-              else g.toast('Ещё рано, подожди немного')
+            onClick={async () => {
               onClose()
+              if (!online) {
+                if (g.claimRescue()) { sfx.coin(); g.toast('+100 MX') }
+                else g.toast('Ещё рано, подожди немного')
+                return
+              }
+              try {
+                const r = await serverCall<{ amount: number; balance: number }>('/bonus/rescue')
+                g.setServerState({ balance: r.balance, xp: g.xp })
+                sfx.coin()
+                g.toast(`+${fmt(r.amount)} MX`)
+              } catch (e) {
+                g.toast((e as Error).message)
+              }
             }}
           >
             <Icon name="reset" size={20} className="row-ico" />
